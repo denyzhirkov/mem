@@ -88,16 +88,19 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist
+          BUNDLE="target/${{ matrix.target }}/release/bundle"
+          echo "Looking for bundles in: $BUNDLE"
+          find target/${{ matrix.target }}/release/bundle -type f 2>/dev/null | head -20 || echo "No bundle dir found"
           if [ "$RUNNER_OS" == "macOS" ]; then
-            cp apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg dist/ 2>/dev/null || true
+            cp $BUNDLE/dmg/*.dmg dist/ 2>/dev/null || true
           elif [ "$RUNNER_OS" == "Linux" ]; then
-            cp apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage dist/ 2>/dev/null || true
-            cp apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb dist/ 2>/dev/null || true
+            cp $BUNDLE/appimage/*.AppImage dist/ 2>/dev/null || true
+            cp $BUNDLE/deb/*.deb dist/ 2>/dev/null || true
           elif [ "$RUNNER_OS" == "Windows" ]; then
-            cp apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe dist/ 2>/dev/null || true
-            cp apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi dist/ 2>/dev/null || true
+            cp $BUNDLE/nsis/*.exe dist/ 2>/dev/null || true
+            cp $BUNDLE/msi/*.msi dist/ 2>/dev/null || true
           fi
-          # Signature files skipped (updater not configured yet)
+          echo "Collected:" && ls -la dist/
 
       - uses: actions/upload-artifact@v4
         with:
