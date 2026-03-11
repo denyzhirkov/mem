@@ -21,11 +21,11 @@ done
 
 # Detect platform
 OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
-ARCH="$(uname -m)"
-case "$ARCH" in
-  x86_64) ARCH="x86_64" ;;
-  arm64|aarch64) ARCH="aarch64" ;;
-  *) echo "Unsupported architecture: $ARCH"; exit 1 ;;
+RAW_ARCH="$(uname -m)"
+case "$RAW_ARCH" in
+  x86_64)       ARCH="x86_64"; TAURI_ARCH="x64"; DEB_ARCH="amd64" ;;
+  arm64|aarch64) ARCH="aarch64"; TAURI_ARCH="aarch64"; DEB_ARCH="arm64" ;;
+  *) echo "Unsupported architecture: $RAW_ARCH"; exit 1 ;;
 esac
 PLATFORM="${OS}-${ARCH}"
 
@@ -80,7 +80,7 @@ if [ "$CLI_ONLY" = false ]; then
   echo "[2/2] Installing desktop app..."
 
   if [ "$OS" = "darwin" ]; then
-    DMG_NAME="mem_${VERSION}_${ARCH}.dmg"
+    DMG_NAME="mem_${VERSION}_${TAURI_ARCH}.dmg"
     DMG_URL="${BASE_URL}/${DMG_NAME}"
     TMPDIR_DMG="$(mktemp -d)"
     DMG_PATH="${TMPDIR_DMG}/mem.dmg"
@@ -104,7 +104,7 @@ if [ "$CLI_ONLY" = false ]; then
 
   elif [ "$OS" = "linux" ]; then
     # Try AppImage first
-    AI_NAME="mem_${VERSION}_${ARCH}.AppImage"
+    AI_NAME="mem_${VERSION}_${DEB_ARCH}.AppImage"
     AI_URL="${BASE_URL}/${AI_NAME}"
     AI_DEST="$HOME/.local/bin/mem-desktop"
 
@@ -126,7 +126,7 @@ DESKTOP
       echo "  -> $DESKTOP_DIR/mem.desktop"
     else
       echo "  AppImage not found. Trying .deb..."
-      DEB_NAME="mem_${VERSION}_amd64.deb"
+      DEB_NAME="mem_${VERSION}_${DEB_ARCH}.deb"
       DEB_URL="${BASE_URL}/${DEB_NAME}"
       TMPFILE="$(mktemp)"
       if curl -fsSL "$DEB_URL" -o "$TMPFILE" 2>/dev/null; then
