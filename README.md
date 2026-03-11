@@ -2,6 +2,19 @@
 
 Minimal local-first knowledge keeper. Markdown files, SQLite index, tiny desktop UI, CLI.
 
+<p align="center">
+  <img src="docs/screenshots/blank_note.png" width="720" alt="Fresh note — just start writing" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/example_note.png" width="720" alt="Note with tags and related notes" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/notes_and_search.png" width="360" alt="Notes list with tags" />
+  <img src="docs/screenshots/search_example.png" width="360" alt="Full-text search with highlighted matches" />
+</p>
+
 ## Install
 
 ### Desktop app
