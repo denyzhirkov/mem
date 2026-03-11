@@ -18,7 +18,7 @@ Download the latest release for your platform:
 ### CLI
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/denyzhirkov/mem/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/denyzhirkov/mem/master/scripts/install.sh | sh
 ```
 
 Or build from source:

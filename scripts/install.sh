@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # mem installer
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/denyzhirkov/mem/main/scripts/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/denyzhirkov/mem/master/scripts/install.sh | sh
 #   curl ... | sh -s -- --cli-only
 #   curl ... | sh -s -- --app-only
 set -euo pipefail
