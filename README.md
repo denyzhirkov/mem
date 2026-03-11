@@ -28,11 +28,13 @@ Download the latest release for your platform:
 | Linux | [.AppImage](https://github.com/denyzhirkov/mem/releases/latest) / [.deb](https://github.com/denyzhirkov/mem/releases/latest) |
 | Windows | [.msi](https://github.com/denyzhirkov/mem/releases/latest) |
 
-### CLI
+### One-line install (CLI + Desktop)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/denyzhirkov/mem/master/scripts/install.sh | sh
 ```
+
+Use `--cli-only` or `--app-only` to install just one component.
 
 Or build from source:
 
