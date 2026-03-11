@@ -1,0 +1,9 @@
+[package]
+name = "mem-index"
+version = "1.0.0"
+edition = "2024"
+
+[dependencies]
+mem-domain = { version = "1.0.0", path = "../mem-domain" }
+rusqlite = { version = "0.38.0", features = ["bundled", "bundled-full"] }
+thiserror = "2.0.18"

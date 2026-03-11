@@ -1,0 +1,12 @@
+[workspace]
+members = [
+    "crates/mem-domain",
+    "crates/mem-storage",
+    "crates/mem-index",
+    "crates/mem-parser",
+    "crates/mem-sync",
+    "crates/mem-app-api",
+    "crates/mem-cli",
+    "apps/desktop/src-tauri",
+]
+resolver = "2"

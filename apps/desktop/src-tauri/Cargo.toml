@@ -1,0 +1,37 @@
+[package]
+name = "mem-desktop"
+version = "1.0.0"
+description = "mem — minimal knowledge keeper"
+authors = ["denyzhirkov"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "mem_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "mem"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+mem-domain = { version = "1.0.0", path = "../../../crates/mem-domain" }
+mem-storage = { version = "1.0.0", path = "../../../crates/mem-storage" }
+mem-index = { version = "1.0.0", path = "../../../crates/mem-index" }
+mem-parser = { version = "1.0.0", path = "../../../crates/mem-parser" }
+rusqlite = { version = "0.38.0", features = ["bundled"] }
+chrono = { version = "0.4.44", features = ["serde"] }
+anyhow = "1.0.102"
+dirs = "6.0.0"
+

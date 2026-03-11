@@ -1,0 +1,32 @@
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# Node / Frontend
+node_modules/
+apps/desktop/dist/
+apps/desktop/src-tauri/target/
+
+# Build artifacts
+/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Tauri
+apps/desktop/src-tauri/gen/
+
+# Internal
+.tsk/
+.mem/
+
+CLAUDE.md

@@ -1,0 +1,9 @@
+[package]
+name = "mem-domain"
+version = "1.0.0"
+edition = "2024"
+
+[dependencies]
+chrono = { version = "0.4.44", features = ["serde"] }
+serde = { version = "1.0.228", features = ["derive"] }
+ulid = { version = "1.2.1", features = ["serde"] }

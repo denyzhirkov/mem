@@ -1,0 +1,9 @@
+[package]
+name = "mem-parser"
+version = "1.0.0"
+edition = "2024"
+
+[dependencies]
+mem-domain = { version = "1.0.0", path = "../mem-domain" }
+once_cell = "1.21.3"
+regex = "1.12.3"
