@@ -31,17 +31,10 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "createUpdaterArtifacts": "v1Compatible",
+    "createUpdaterArtifacts": false,
     "copyright": "mem",
     "shortDescription": "Minimal knowledge keeper",
     "longDescription": "Local-first personal knowledge app. Markdown files, fast search, tags."
   },
-  "plugins": {
-    "updater": {
-      "pubkey": "",
-      "endpoints": [
-        "https://github.com/denyzhirkov/mem/releases/latest/download/latest.json"
-      ]
-    }
-  }
+  "plugins": {}
 }

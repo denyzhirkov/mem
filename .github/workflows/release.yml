@@ -79,8 +79,6 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: apps/desktop
           tauriScript: npx tauri
@@ -99,7 +97,7 @@ jobs:
             cp apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe dist/ 2>/dev/null || true
             cp apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi dist/ 2>/dev/null || true
           fi
-          find apps/desktop/src-tauri/target -name "*.sig" -exec cp {} dist/ \; 2>/dev/null || true
+          # Signature files skipped (updater not configured yet)
 
       - uses: actions/upload-artifact@v4
         with:
