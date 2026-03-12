@@ -1,6 +1,6 @@
 [package]
 name = "mem-sync"
-version = "1.2.0"
+version.workspace = true
 edition = "2024"
 
 [dependencies]

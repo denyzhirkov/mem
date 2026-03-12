@@ -1,6 +1,6 @@
 [package]
 name = "mem-desktop"
-version = "1.2.0"
+version.workspace = true
 description = "mem — minimal knowledge keeper"
 authors = ["denyzhirkov"]
 edition = "2021"

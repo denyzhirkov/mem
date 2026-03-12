@@ -1,4 +1,4 @@
-import { Show } from "solid-js";
+import { Show, createSignal } from "solid-js";
 
 type Props = {
   theme: () => "light" | "dark";
@@ -12,10 +12,18 @@ type Props = {
 };
 
 export default function TopBar(props: Props) {
+  const [hovered, setHovered] = createSignal(false);
+
   return (
     <div class="topbar">
       <div class="topbar-left">
-        <span class="brand">mem</span>
+        <span
+          class="brand"
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+        >
+          {hovered() ? `v${__APP_VERSION__}` : "mem"}
+        </span>
       </div>
       <div class="topbar-right">
         <button class="topbar-btn theme-toggle" onClick={props.onToggleTheme}>
