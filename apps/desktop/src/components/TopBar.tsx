@@ -13,6 +13,7 @@ type Props = {
 
 export default function TopBar(props: Props) {
   const [hovered, setHovered] = createSignal(false);
+  const mod = navigator.platform.includes("Mac") ? "\u2318+" : "Ctrl+";
 
   return (
     <div class="topbar">
@@ -40,10 +41,10 @@ export default function TopBar(props: Props) {
           </button>
         </Show>
         <button class="topbar-btn" onClick={props.onOpenPalette}>
-          Notes <kbd>{"\u2318"}P</kbd>
+          Notes <kbd>{mod}P</kbd>
         </button>
         <button class="topbar-btn" onClick={props.onNewNote}>
-          New <kbd>{"\u2318"}N</kbd>
+          New <kbd>{mod}N</kbd>
         </button>
       </div>
     </div>
