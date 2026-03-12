@@ -79,6 +79,14 @@ export default function Palette(props: Props) {
   const browse = useVirtualList(() => props.allNotes(), ROW_HEIGHT);
   const search = useVirtualList(() => props.results(), ROW_HEIGHT_SEARCH);
 
+  const uniqueTagCount = createMemo(() => {
+    const tags = new Set<string>();
+    for (const note of props.allNotes()) {
+      for (const t of note.tags) tags.add(t);
+    }
+    return tags.size;
+  });
+
   return (
     <div class="palette-overlay" onClick={(e) => { if (e.target === e.currentTarget) props.onClose(); }}>
       <div class="palette">
@@ -91,6 +99,13 @@ export default function Palette(props: Props) {
           onInput={(e) => props.onInput(e.currentTarget.value)}
           onKeyDown={props.onKeyDown}
         />
+        <div class="palette-stats">
+          <Show when={isSearchMode()} fallback={
+            <>{props.allNotes().length} notes &middot; {uniqueTagCount()} tags</>
+          }>
+            {props.results().length} found
+          </Show>
+        </div>
         <div class="palette-action-wrap">
           <div class="palette-action" onClick={props.onNewBlank}>
             + New blank note

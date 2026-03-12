@@ -12,6 +12,7 @@ import NoteFooter from "./components/NoteFooter";
 import StatusBar from "./components/StatusBar";
 import DeleteConfirm from "./components/DeleteConfirm";
 import Palette from "./components/Palette";
+import TagGraph from "./components/TagGraph";
 import "./App.css";
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
   const [paletteAllNotes, setPaletteAllNotes] = createSignal<NoteInfo[]>([]);
   const [paletteIndex, setPaletteIndex] = createSignal(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = createSignal(false);
+  const [showGraph, setShowGraph] = createSignal(false);
   const [theme, setTheme] = createSignal<"light" | "dark">(
     window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
   );
@@ -181,6 +183,7 @@ function App() {
     setDirty(false);
     setShowDeleteConfirm(false);
     setShowPalette(false);
+    setShowGraph(false);
     charsSinceSave = 0;
 
     try {
@@ -335,14 +338,20 @@ function App() {
         theme={theme}
         dirty={dirty}
         hasNote={() => !!currentNote()}
+        showGraph={showGraph}
         onToggleTheme={toggleTheme}
         onSave={saveNote}
         onDelete={() => setShowDeleteConfirm(true)}
         onOpenPalette={openPalette}
         onNewNote={handleNewNote}
+        onToggleGraph={() => setShowGraph(v => !v)}
       />
 
-      <div class="canvas">
+      <Show when={showGraph()}>
+        <TagGraph onTagClick={handleTagClick} />
+      </Show>
+
+      <div class="canvas" style={{ display: showGraph() ? "none" : undefined }}>
         <div class="page">
           <input
             class="title-input"

@@ -40,6 +40,10 @@
   color: var(--text);
   background: var(--bg-hover);
 }
+.topbar-btn-active {
+  color: var(--accent) !important;
+  background: var(--accent-dim);
+}
 
 .theme-toggle {
   opacity: 0;

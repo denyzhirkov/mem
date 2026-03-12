@@ -228,6 +228,55 @@ fn remove_note(id: String, state: tauri::State<'_, AppState>) -> Result<(), Stri
     Ok(())
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct TagGraphData {
+    pub nodes: Vec<TagNode>,
+    pub edges: Vec<TagEdge>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct TagNode {
+    pub name: String,
+    pub count: i64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct TagEdge {
+    pub source: String,
+    pub target: String,
+    pub weight: i64,
+}
+
+#[tauri::command]
+fn tag_graph(state: tauri::State<'_, AppState>) -> Result<TagGraphData, String> {
+    let db = state.db.lock().map_err(|e| e.to_string())?;
+
+    // Nodes: tags with note count
+    let mut stmt = db.conn().prepare(
+        "SELECT normalized_name, note_count FROM tags WHERE note_count > 0 ORDER BY note_count DESC"
+    ).map_err(|e| e.to_string())?;
+    let nodes: Vec<TagNode> = stmt.query_map([], |row| {
+        Ok(TagNode { name: row.get(0)?, count: row.get(1)? })
+    }).map_err(|e| e.to_string())?
+      .filter_map(|r| r.ok())
+      .collect();
+
+    // Edges: tags co-occurring in same note
+    let mut stmt = db.conn().prepare(
+        "SELECT a.tag_name, b.tag_name, COUNT(*) as weight
+         FROM note_tags a
+         JOIN note_tags b ON a.note_id = b.note_id AND a.tag_name < b.tag_name
+         GROUP BY a.tag_name, b.tag_name"
+    ).map_err(|e| e.to_string())?;
+    let edges: Vec<TagEdge> = stmt.query_map([], |row| {
+        Ok(TagEdge { source: row.get(0)?, target: row.get(1)?, weight: row.get(2)? })
+    }).map_err(|e| e.to_string())?
+      .filter_map(|r| r.ok())
+      .collect();
+
+    Ok(TagGraphData { nodes, edges })
+}
+
 #[tauri::command]
 fn search_notes(query: String, state: tauri::State<'_, AppState>) -> Result<Vec<SearchResult>, String> {
     let db = state.db.lock().map_err(|e| e.to_string())?;
@@ -272,7 +321,8 @@ pub fn run() {
             create_note,
             update_note,
             remove_note,
-            search_notes
+            search_notes,
+            tag_graph
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

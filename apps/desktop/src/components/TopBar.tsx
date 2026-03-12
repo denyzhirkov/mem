@@ -4,11 +4,13 @@ type Props = {
   theme: () => "light" | "dark";
   dirty: () => boolean;
   hasNote: () => boolean;
+  showGraph: () => boolean;
   onToggleTheme: () => void;
   onSave: () => void;
   onDelete: () => void;
   onOpenPalette: () => void;
   onNewNote: () => void;
+  onToggleGraph: () => void;
 };
 
 export default function TopBar(props: Props) {
@@ -27,23 +29,31 @@ export default function TopBar(props: Props) {
         </span>
       </div>
       <div class="topbar-right">
-        <button class="topbar-btn theme-toggle" onClick={props.onToggleTheme}>
+        <button class="topbar-btn theme-toggle" onClick={props.onToggleTheme} title="Toggle theme">
           {props.theme() === "light" ? "\u263E" : "\u2600"}
         </button>
+        <button
+          class="topbar-btn"
+          classList={{ "topbar-btn-active": props.showGraph() }}
+          onClick={props.onToggleGraph}
+          title="Tag graph"
+        >
+          Graph
+        </button>
         <Show when={props.dirty()}>
-          <button class="topbar-btn" onClick={props.onSave}>
+          <button class="topbar-btn" onClick={props.onSave} title={`Save (${mod}S)`}>
             Save <div class="save-dot" />
           </button>
         </Show>
         <Show when={props.hasNote()}>
-          <button class="topbar-btn" onClick={props.onDelete} style={{ color: "var(--danger)" }}>
+          <button class="topbar-btn" onClick={props.onDelete} style={{ color: "var(--danger)" }} title="Delete note">
             {"\u2715"}
           </button>
         </Show>
-        <button class="topbar-btn" onClick={props.onOpenPalette}>
+        <button class="topbar-btn" onClick={props.onOpenPalette} title={`Search notes (${mod}P)`}>
           Notes <kbd>{mod}P</kbd>
         </button>
-        <button class="topbar-btn" onClick={props.onNewNote}>
+        <button class="topbar-btn" onClick={props.onNewNote} title={`New note (${mod}N)`}>
           New <kbd>{mod}N</kbd>
         </button>
       </div>

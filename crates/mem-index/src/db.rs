@@ -29,7 +29,8 @@ impl IndexDb {
 
         let mut db = Self { conn };
         db.migrate()?;
-        
+        db.fix_tag_counts()?;
+
         Ok(db)
     }
 
@@ -55,6 +56,17 @@ impl IndexDb {
             tx.commit()?;
         }
 
+        Ok(())
+    }
+
+    /// Recalculate tag counts from note_tags and remove orphaned tags
+    fn fix_tag_counts(&mut self) -> Result<(), IndexError> {
+        self.conn.execute_batch(
+            "UPDATE tags SET note_count = (
+                SELECT COUNT(*) FROM note_tags WHERE tag_name = tags.normalized_name
+             );
+             DELETE FROM tags WHERE note_count <= 0;"
+        )?;
         Ok(())
     }
 

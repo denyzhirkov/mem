@@ -5,6 +5,7 @@
 @import "./styles/statusbar.css";
 @import "./styles/palette.css";
 @import "./styles/delete.css";
+@import "./styles/graph.css";
 
 /* ===== App shell ===== */
 .app {

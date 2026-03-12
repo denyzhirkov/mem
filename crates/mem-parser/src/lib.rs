@@ -1,9 +1,9 @@
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-// Tags: alpha-numeric with underscores and dashes
+// Tags: must start with a letter or underscore, at least 2 chars (excludes pure numbers like #1)
 static TAG_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"(?i)(?:^|\s)#([a-z0-9_-]+)").unwrap()
+    Regex::new(r"(?i)(?:^|[^a-zA-Z0-9_])#([a-z_][a-z0-9_-]+)").unwrap()
 });
 
 // Links: [[Link Title]]

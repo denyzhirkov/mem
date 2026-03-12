@@ -34,9 +34,16 @@ impl IndexDb {
             ),
         )?;
 
-        // 2. Tags & links
+        // 2. Tags & links — decrement old counts before removing
+        tx.execute(
+            "UPDATE tags SET note_count = note_count - 1
+             WHERE normalized_name IN (SELECT tag_name FROM note_tags WHERE note_id = ?1)",
+            [&note.id.0],
+        )?;
         tx.execute("DELETE FROM note_tags WHERE note_id = ?1", [&note.id.0])?;
         tx.execute("DELETE FROM links WHERE source_id = ?1", [&note.id.0])?;
+        // Clean up tags with zero or negative counts
+        tx.execute("DELETE FROM tags WHERE note_count <= 0", [])?;
 
         for tag in &note.tags {
             tx.execute(

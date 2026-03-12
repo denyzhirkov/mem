@@ -13,3 +13,19 @@ export type SearchResult = {
   match_kind: string;
   score: number;
 };
+
+export type TagNode = {
+  name: string;
+  count: number;
+};
+
+export type TagEdge = {
+  source: string;
+  target: string;
+  weight: number;
+};
+
+export type TagGraphData = {
+  nodes: TagNode[];
+  edges: TagEdge[];
+};

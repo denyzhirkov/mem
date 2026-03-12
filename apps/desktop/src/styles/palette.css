@@ -13,7 +13,7 @@
 
 .palette {
   width: 480px;
-  max-height: 420px;
+  max-height: 460px;
   background: var(--bg-palette);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -130,6 +130,13 @@
   text-align: center;
   color: var(--text-dim);
   font-size: 13px;
+}
+
+.palette-stats {
+  padding: 6px 20px;
+  font-size: 11px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
 }
 
 .palette-action-wrap {
