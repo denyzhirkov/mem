@@ -93,6 +93,8 @@ if [ "$CLI_ONLY" = false ]; then
       if [ -n "$APP_NAME" ]; then
         rm -rf "/Applications/${APP_NAME}"
         cp -R "$MOUNT_POINT/$APP_NAME" /Applications/
+        # Remove quarantine flag (app is not notarized)
+        xattr -cr "/Applications/${APP_NAME}" 2>/dev/null || true
         echo "  -> /Applications/${APP_NAME}"
       fi
       hdiutil detach "$MOUNT_POINT" -quiet
