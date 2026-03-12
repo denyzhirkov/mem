@@ -62,20 +62,30 @@ fn load_tags_for_note(db: &IndexDb, note_id: &str) -> Vec<String> {
 fn list_notes(state: tauri::State<'_, AppState>) -> Result<Vec<NoteWithTags>, String> {
     let db = state.db.lock().map_err(|e| e.to_string())?;
     let mut stmt = db.conn().prepare(
-        "SELECT id, title, slug, path, created_at, updated_at, content_hash, archived FROM notes ORDER BY updated_at DESC"
+        "SELECT n.id, n.title, n.slug, n.updated_at, IFNULL(GROUP_CONCAT(nt.tag_name, ','), '')
+         FROM notes n
+         LEFT JOIN note_tags nt ON n.id = nt.note_id
+         GROUP BY n.id
+         ORDER BY n.updated_at DESC"
     ).map_err(|e| e.to_string())?;
 
     let iter = stmt.query_map([], |row| {
-        Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?, row.get::<_, String>(2)?, row.get::<_, String>(5)?))
+        let tags_str: String = row.get(4)?;
+        let tags: Vec<String> = if tags_str.is_empty() {
+            vec![]
+        } else {
+            tags_str.split(',').map(|s| s.to_string()).collect()
+        };
+        Ok(NoteWithTags {
+            id: row.get(0)?,
+            title: row.get(1)?,
+            slug: row.get(2)?,
+            updated_at: row.get(3)?,
+            tags,
+        })
     }).map_err(|e| e.to_string())?;
 
-    let mut notes = vec![];
-    for r in iter {
-        let (id, title, slug, updated_at) = r.map_err(|e| e.to_string())?;
-        let tags = load_tags_for_note(&db, &id);
-        notes.push(NoteWithTags { id, title, slug, tags, updated_at });
-    }
-    Ok(notes)
+    iter.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -96,28 +106,36 @@ fn get_note_tags(id: String, state: tauri::State<'_, AppState>) -> Result<Vec<St
 #[tauri::command]
 fn get_related_notes(id: String, state: tauri::State<'_, AppState>) -> Result<Vec<NoteWithTags>, String> {
     let db = state.db.lock().map_err(|e| e.to_string())?;
-    // Find notes that share tags with the given note
     let mut stmt = db.conn().prepare(
-        "SELECT DISTINCT n.id, n.title, n.slug, n.updated_at
+        "SELECT n.id, n.title, n.slug, n.updated_at, IFNULL(GROUP_CONCAT(DISTINCT all_tags.tag_name), '')
          FROM notes n
          JOIN note_tags nt ON n.id = nt.note_id
+         LEFT JOIN note_tags all_tags ON n.id = all_tags.note_id
          WHERE nt.tag_name IN (SELECT tag_name FROM note_tags WHERE note_id = ?1)
          AND n.id != ?1
+         GROUP BY n.id
+         HAVING COUNT(DISTINCT nt.tag_name) > 0
          ORDER BY n.updated_at DESC
          LIMIT 20"
     ).map_err(|e| e.to_string())?;
 
     let iter = stmt.query_map([&id], |row| {
-        Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?, row.get::<_, String>(2)?, row.get::<_, String>(3)?))
+        let tags_str: String = row.get(4)?;
+        let tags: Vec<String> = if tags_str.is_empty() {
+            vec![]
+        } else {
+            tags_str.split(',').map(|s| s.to_string()).collect()
+        };
+        Ok(NoteWithTags {
+            id: row.get(0)?,
+            title: row.get(1)?,
+            slug: row.get(2)?,
+            updated_at: row.get(3)?,
+            tags,
+        })
     }).map_err(|e| e.to_string())?;
 
-    let mut related = vec![];
-    for r in iter {
-        let (rid, title, slug, updated_at) = r.map_err(|e| e.to_string())?;
-        let tags = load_tags_for_note(&db, &rid);
-        related.push(NoteWithTags { id: rid, title, slug, tags, updated_at });
-    }
-    Ok(related)
+    iter.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
 }
 
 #[tauri::command]

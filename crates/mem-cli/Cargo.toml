@@ -1,6 +1,6 @@
 [package]
 name = "mem-cli"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2024"
 
 [[bin]]
@@ -11,8 +11,8 @@ path = "src/main.rs"
 anyhow = "1.0.102"
 chrono = { version = "0.4.44", features = ["serde"] }
 clap = { version = "4.5.60", features = ["derive"] }
-mem-domain = { version = "1.1.0", path = "../mem-domain" }
-mem-index = { version = "1.1.0", path = "../mem-index" }
-mem-parser = { version = "1.1.0", path = "../mem-parser" }
-mem-storage = { version = "1.1.0", path = "../mem-storage" }
-mem-sync = { version = "1.1.0", path = "../mem-sync" }
+mem-domain = { version = "1.2.0", path = "../mem-domain" }
+mem-index = { version = "1.2.0", path = "../mem-index" }
+mem-parser = { version = "1.2.0", path = "../mem-parser" }
+mem-storage = { version = "1.2.0", path = "../mem-storage" }
+mem-sync = { version = "1.2.0", path = "../mem-sync" }

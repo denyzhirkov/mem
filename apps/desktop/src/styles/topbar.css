@@ -1,0 +1,68 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+}
+
+.topbar-left, .topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  -webkit-app-region: no-drag;
+}
+
+.brand {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text-dim);
+  margin-right: 8px;
+  cursor: default;
+}
+
+.topbar-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+  font-size: 12px;
+  transition: all 180ms var(--ease);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.topbar-btn:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+}
+
+.theme-toggle {
+  opacity: 0;
+  transition: opacity 300ms var(--ease), color 180ms var(--ease), background 180ms var(--ease);
+}
+.topbar-right:hover .theme-toggle {
+  opacity: 1;
+}
+
+.topbar-btn kbd {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--bg-hover);
+  color: var(--text-dim);
+  font-family: inherit;
+  border: 1px solid var(--border);
+}
+
+.save-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-left: 2px;
+}

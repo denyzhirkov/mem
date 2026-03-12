@@ -1,0 +1,20 @@
+.statusbar {
+  flex-shrink: 0;
+  padding: 8px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 11px;
+  color: var(--text-dim);
+  user-select: none;
+}
+
+.statusbar-hints {
+  display: flex;
+  gap: 16px;
+}
+
+.statusbar-hints span {
+  opacity: 0.7;
+}

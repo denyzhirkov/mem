@@ -1,26 +1,18 @@
-import { createSignal, createEffect, onMount, onCleanup, Show, For } from "solid-js";
+import { createSignal, createEffect, createMemo, onMount, onCleanup, Show } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import { Editor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { Markdown } from "tiptap-markdown";
 import Placeholder from "@tiptap/extension-placeholder";
+import { HashtagHighlight } from "./extensions/hashtag";
+import type { NoteInfo, SearchResult } from "./types";
+import TopBar from "./components/TopBar";
+import BubbleMenu from "./components/BubbleMenu";
+import NoteFooter from "./components/NoteFooter";
+import StatusBar from "./components/StatusBar";
+import DeleteConfirm from "./components/DeleteConfirm";
+import Palette from "./components/Palette";
 import "./App.css";
-
-type NoteInfo = {
-  id: string;
-  title: string;
-  slug: string;
-  tags: string[];
-  updated_at: string;
-};
-
-type SearchResult = {
-  note_id: string;
-  title: string;
-  excerpt: string;
-  match_kind: string;
-  score: number;
-};
 
 function App() {
   const [currentNote, setCurrentNote] = createSignal<NoteInfo | null>(null);
@@ -63,6 +55,7 @@ function App() {
         StarterKit,
         Markdown,
         Placeholder.configure({ placeholder: "Just start writing..." }),
+        HashtagHighlight.configure({ onTagClick: (tag: string) => handleTagClick(tag) }),
       ],
       content: "",
       autofocus: "end",
@@ -100,17 +93,14 @@ function App() {
 
   // ===== Autosave =====
   function scheduleAutosave() {
-    // Idle debounce: save after 2s of no typing
     clearTimeout(idleTimer);
     idleTimer = setTimeout(() => doAutosave(), AUTOSAVE_IDLE_MS);
 
-    // Char threshold: save every N chars
     if (charsSinceSave >= AUTOSAVE_CHARS) {
       doAutosave();
       return;
     }
 
-    // Max interval: save at least every 30s if dirty
     if (!maxTimer) {
       maxTimer = setTimeout(() => {
         maxTimer = null;
@@ -143,13 +133,11 @@ function App() {
     }
   }
 
-  // Total items count in palette
-  const paletteItemCount = () => {
+  const paletteItemCount = createMemo(() => {
     if (paletteQuery().length > 0) return paletteResults().length;
     return paletteAllNotes().length;
-  };
+  });
 
-  // Get note info for a palette index
   function paletteNoteAtIndex(idx: number): NoteInfo | null {
     if (paletteQuery().length > 0) {
       const r = paletteResults()[idx];
@@ -294,8 +282,17 @@ function App() {
   }
 
   function handleTagClick(tag: string) {
-    openPalette();
-    setTimeout(() => { setPaletteQuery(tag); loadPaletteData(); }, 50);
+    const q = tag.startsWith("#") ? tag : `#${tag}`;
+    setShowPalette(true);
+    setPaletteQuery(q);
+    setPaletteIndex(0);
+    loadPaletteData();
+    setTimeout(() => paletteInputRef?.focus(), 30);
+  }
+
+  function handleNewNote() {
+    if (dirty()) saveNote().then(newBlankNote);
+    else newBlankNote();
   }
 
   // ===== Lifecycle =====
@@ -304,7 +301,7 @@ function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") { e.preventDefault(); saveNote(); }
       else if ((e.metaKey || e.ctrlKey) && e.key === "p") { e.preventDefault(); showPalette() ? closePalette() : openPalette(); }
-      else if ((e.metaKey || e.ctrlKey) && e.key === "n") { e.preventDefault(); if (dirty()) saveNote().then(newBlankNote); else newBlankNote(); }
+      else if ((e.metaKey || e.ctrlKey) && e.key === "n") { e.preventDefault(); handleNewNote(); }
     };
     window.addEventListener("keydown", handleKeyDown);
     onCleanup(() => {
@@ -322,8 +319,7 @@ function App() {
     palSearchTimeout = setTimeout(() => loadPaletteData(), 200);
   }
 
-  // ===== Helpers =====
-  const formatDate = () => {
+  const formatDate = createMemo(() => {
     const note = currentNote();
     if (!note?.updated_at) return "";
     try {
@@ -331,61 +327,21 @@ function App() {
         month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit",
       });
     } catch { return ""; }
-  };
-
-  /** Render FTS excerpt with <m>...</m> highlights */
-  function ExcerptHtml(props: { text: string; kind: string }) {
-    // FTS returns <m>match</m> markers
-    const parts = props.text.split(/(<m>.*?<\/m>)/g);
-    return (
-      <span class="excerpt-text">
-        <For each={parts}>
-          {(part) => {
-            const match = part.match(/^<m>(.*)<\/m>$/);
-            if (match) {
-              if (props.kind === "tag") {
-                return <span class="excerpt-tag-hl">{match[1]}</span>;
-              }
-              return <span class="excerpt-hl">{match[1]}</span>;
-            }
-            return <span>{part}</span>;
-          }}
-        </For>
-      </span>
-    );
-  }
+  });
 
   return (
     <div class="app">
-      {/* Top bar */}
-      <div class="topbar">
-        <div class="topbar-left">
-          <span class="brand">mem</span>
-        </div>
-        <div class="topbar-right">
-          <button class="topbar-btn theme-toggle" onClick={toggleTheme}>
-            {theme() === "light" ? "\u263E" : "\u2600"}
-          </button>
-          <Show when={dirty()}>
-            <button class="topbar-btn" onClick={saveNote}>
-              Save <div class="save-dot" />
-            </button>
-          </Show>
-          <Show when={currentNote()}>
-            <button class="topbar-btn" onClick={() => setShowDeleteConfirm(true)} style={{ color: "var(--danger)" }}>
-              {"\u2715"}
-            </button>
-          </Show>
-          <button class="topbar-btn" onClick={openPalette}>
-            Notes <kbd>{"\u2318"}P</kbd>
-          </button>
-          <button class="topbar-btn" onClick={() => { if (dirty()) saveNote().then(newBlankNote); else newBlankNote(); }}>
-            New <kbd>{"\u2318"}N</kbd>
-          </button>
-        </div>
-      </div>
+      <TopBar
+        theme={theme}
+        dirty={dirty}
+        hasNote={() => !!currentNote()}
+        onToggleTheme={toggleTheme}
+        onSave={saveNote}
+        onDelete={() => setShowDeleteConfirm(true)}
+        onOpenPalette={openPalette}
+        onNewNote={handleNewNote}
+      />
 
-      {/* Canvas */}
       <div class="canvas">
         <div class="page">
           <input
@@ -399,143 +355,47 @@ function App() {
             <div class="title-date">{formatDate()}</div>
           </Show>
           <div class="editor-wrap">
-            <Show when={bubbleMenu()}>
-              <div class="bubble-menu" style={{ top: `${bubbleMenu()!.top}px`, left: `${bubbleMenu()!.left}px` }}>
-                <button class="bubble-btn" onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleBold().run(); }} classList={{ active: editor?.isActive("bold") }}>B</button>
-                <button class="bubble-btn" onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleItalic().run(); }} classList={{ active: editor?.isActive("italic") }}><em>I</em></button>
-                <button class="bubble-btn" onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleStrike().run(); }} classList={{ active: editor?.isActive("strike") }}><s>S</s></button>
-                <button class="bubble-btn" onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleCode().run(); }} classList={{ active: editor?.isActive("code") }}>&lt;/&gt;</button>
-              </div>
+            <Show when={bubbleMenu() && editor}>
+              <BubbleMenu position={bubbleMenu()!} editor={editor!} />
             </Show>
             <div class="editor-mount" ref={editorEl!} />
           </div>
         </div>
       </div>
 
-      {/* Tags + Related — sticky bottom */}
       <Show when={currentNote() && (noteTags().length > 0 || relatedNotes().length > 0)}>
-        <div class="note-footer">
-          <Show when={noteTags().length > 0}>
-            <div class="footer-section">
-              <div class="footer-label">Tags</div>
-              <div class="tag-list">
-                <For each={noteTags()}>
-                  {(tag) => <button class="tag" onClick={() => handleTagClick(tag)}>#{tag}</button>}
-                </For>
-              </div>
-            </div>
-          </Show>
-          <Show when={relatedNotes().length > 0}>
-            <div class="footer-section">
-              <div class="footer-label">Related</div>
-              <For each={relatedNotes()}>
-                {(rn) => (
-                  <div class="related-item" onClick={() => openNote(rn)}>
-                    <span class="related-title">{rn.title}</span>
-                    <div class="related-tags">
-                      <For each={rn.tags.slice(0, 2)}>
-                        {(t) => <span class="tag-mini">#{t}</span>}
-                      </For>
-                    </div>
-                    <span class="related-arrow">{"\u2192"}</span>
-                  </div>
-                )}
-              </For>
-            </div>
-          </Show>
-        </div>
+        <NoteFooter
+          tags={noteTags}
+          relatedNotes={relatedNotes}
+          onTagClick={handleTagClick}
+          onOpenNote={openNote}
+        />
       </Show>
 
-      {/* Status bar */}
-      <div class="statusbar">
-        <div class="statusbar-hints">
-          <span># heading</span>
-          <span>**bold**</span>
-          <span>*italic*</span>
-          <span>- list</span>
-          <span>&gt; quote</span>
-          <span>#tag</span>
-        </div>
-        <span>{currentNote() ? "Saved" : "New note"}</span>
-      </div>
+      <StatusBar hasNote={() => !!currentNote()} />
 
-      {/* Delete confirm */}
       <Show when={showDeleteConfirm()}>
-        <div class="delete-bar">
-          <span>Delete "{currentNote()?.title || "this note"}"?</span>
-          <button class="btn-sm btn-danger" onClick={() => { deleteNote(); setShowDeleteConfirm(false); }}>Delete</button>
-          <button class="btn-sm btn-cancel" onClick={() => setShowDeleteConfirm(false)}>Cancel</button>
-        </div>
+        <DeleteConfirm
+          noteTitle={currentNote()?.title || ""}
+          onConfirm={() => { deleteNote(); setShowDeleteConfirm(false); }}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
       </Show>
 
-      {/* Command Palette */}
       <Show when={showPalette()}>
-        <div class="palette-overlay" onClick={(e) => { if (e.target === e.currentTarget) closePalette(); }}>
-          <div class="palette">
-            <input
-              ref={paletteInputRef}
-              class="palette-input"
-              type="text"
-              placeholder="Search notes..."
-              value={paletteQuery()}
-              onInput={(e) => handlePaletteInput(e.currentTarget.value)}
-              onKeyDown={paletteKeyDown}
-            />
-            <div class="palette-list">
-              <div class="palette-action" onClick={() => { newBlankNote(); closePalette(); }}>
-                + New blank note
-              </div>
-
-              {/* Search results mode */}
-              <Show when={paletteQuery().length > 0}>
-                <For each={paletteResults()}>
-                  {(result, i) => (
-                    <div
-                      class={`palette-item ${paletteIndex() === i() ? "active" : ""}`}
-                      onClick={() => { const n = paletteNoteAtIndex(i()); if (n) openNote(n); }}
-                      onMouseEnter={() => setPaletteIndex(i())}
-                    >
-                      <div class="palette-item-body">
-                        <div class="palette-item-title">{result.title}</div>
-                        <Show when={result.excerpt}>
-                          <div class={`palette-item-excerpt ${result.match_kind === "tag" ? "excerpt-tag" : ""}`}>
-                            <ExcerptHtml text={result.excerpt} kind={result.match_kind} />
-                          </div>
-                        </Show>
-                      </div>
-                      <span class={`palette-match-badge ${result.match_kind}`}>{result.match_kind}</span>
-                    </div>
-                  )}
-                </For>
-                <Show when={paletteResults().length === 0}>
-                  <div class="palette-empty">No notes found. Press Enter to create one.</div>
-                </Show>
-              </Show>
-
-              {/* Browse mode — all notes */}
-              <Show when={paletteQuery().length === 0}>
-                <For each={paletteAllNotes()}>
-                  {(note, i) => (
-                    <div
-                      class={`palette-item ${paletteIndex() === i() ? "active" : ""}`}
-                      onClick={() => openNote(note)}
-                      onMouseEnter={() => setPaletteIndex(i())}
-                    >
-                      <div class="palette-item-body">
-                        <span class="palette-item-title">{note.title}</span>
-                      </div>
-                      <div class="palette-item-tags">
-                        <For each={note.tags.slice(0, 3)}>
-                          {(t) => <span class="tag-mini">#{t}</span>}
-                        </For>
-                      </div>
-                    </div>
-                  )}
-                </For>
-              </Show>
-            </div>
-          </div>
-        </div>
+        <Palette
+          query={paletteQuery}
+          results={paletteResults}
+          allNotes={paletteAllNotes}
+          activeIndex={paletteIndex}
+          onInput={handlePaletteInput}
+          onKeyDown={paletteKeyDown}
+          onSelectNote={openNote}
+          onNewBlank={() => { newBlankNote(); closePalette(); }}
+          onClose={closePalette}
+          onHoverIndex={setPaletteIndex}
+          inputRef={(el) => { paletteInputRef = el; }}
+        />
       </Show>
     </div>
   );

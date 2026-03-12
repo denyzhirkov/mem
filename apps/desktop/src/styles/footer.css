@@ -1,0 +1,87 @@
+.note-footer {
+  flex-shrink: 0;
+  padding: 10px 24px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg);
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  overflow-x: auto;
+}
+
+.note-footer::-webkit-scrollbar { height: 0; }
+
+.footer-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.footer-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: var(--bg-tag);
+  color: var(--text-tag);
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background 150ms var(--ease);
+}
+.tag:hover { background: var(--bg-tag-hover); }
+
+.tag-mini {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--bg-tag);
+  color: var(--text-tag);
+  font-weight: 500;
+}
+
+.related-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 100ms var(--ease);
+  flex-shrink: 0;
+}
+.related-item:hover { background: var(--bg-hover); }
+
+.related-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.related-arrow {
+  color: var(--text-dim);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.related-tags {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}

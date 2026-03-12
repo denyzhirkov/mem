@@ -1,0 +1,31 @@
+.delete-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  justify-content: center;
+  animation: slideUp 150ms var(--ease);
+}
+
+.delete-bar span {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.btn-sm {
+  padding: 5px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 120ms var(--ease);
+}
+
+.btn-danger { background: var(--danger); color: white; }
+.btn-danger:hover { filter: brightness(1.1); }
+
+.btn-cancel { background: var(--bg-hover); color: var(--text-muted); }
+.btn-cancel:hover { background: var(--bg-active); }
