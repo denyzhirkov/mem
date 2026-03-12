@@ -27,17 +27,17 @@
 }
 
 [data-theme="dark"] {
-  --bg: #0f0f0f;
-  --bg-card: #161616;
-  --bg-overlay: rgba(15,15,15,0.88);
-  --bg-hover: #1e1e1e;
-  --bg-active: #2a2a2a;
-  --bg-input: #1a1a1a;
-  --bg-tag: #282633;
-  --bg-tag-hover: #353241;
-  --bg-palette: #1a1a1a;
-  --border: #1e1e1e;
-  --border-subtle: #191919;
+  --bg: #1a1a1a;
+  --bg-card: #212121;
+  --bg-overlay: rgba(26,26,26,0.88);
+  --bg-hover: #2a2a2a;
+  --bg-active: #353535;
+  --bg-input: #252525;
+  --bg-tag: #332f3e;
+  --bg-tag-hover: #403c4c;
+  --bg-palette: #252525;
+  --border: #2a2a2a;
+  --border-subtle: #242424;
   --border-focus: #9590ad;
   --text: #e7e5e4;
   --text-dim: #525050;
@@ -113,6 +113,14 @@ body {
   background: var(--bg-hover);
 }
 
+.theme-toggle {
+  opacity: 0;
+  transition: opacity 300ms var(--ease), color 180ms var(--ease), background 180ms var(--ease);
+}
+.topbar-right:hover .theme-toggle {
+  opacity: 1;
+}
+
 .topbar-btn kbd {
   font-size: 10px;
   padding: 1px 5px;
@@ -121,6 +129,47 @@ body {
   color: var(--text-dim);
   font-family: inherit;
   border: 1px solid var(--border);
+}
+
+/* ===== Bubble Menu ===== */
+.editor-wrap {
+  position: relative;
+}
+
+.bubble-menu {
+  position: absolute;
+  z-index: 50;
+  display: flex;
+  width: fit-content;
+  gap: 2px;
+  padding: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  transform: translateX(-50%);
+}
+
+.bubble-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  line-height: 1;
+  transition: all 150ms var(--ease);
+}
+.bubble-btn:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+}
+.bubble-btn.active {
+  color: var(--accent);
+  background: var(--accent-dim);
 }
 
 .save-dot {

@@ -40,6 +40,7 @@ function App() {
 
   let editorEl: HTMLDivElement | undefined;
   let paletteInputRef: HTMLInputElement | undefined;
+  const [bubbleMenu, setBubbleMenu] = createSignal<{ top: number; left: number } | null>(null);
   let editor: Editor | null = null;
   let charsSinceSave = 0;
 
@@ -68,13 +69,26 @@ function App() {
       editorProps: { attributes: { class: "tiptap" } },
       onUpdate: ({ transaction }) => {
         setDirty(true);
-        // Count inserted characters for autosave
         transaction.steps.forEach((step: any) => {
           if (step.slice?.content?.size) {
             charsSinceSave += step.slice.content.size;
           }
         });
         scheduleAutosave();
+      },
+      onSelectionUpdate: ({ editor: e }) => {
+        if (e.state.selection.empty) {
+          setBubbleMenu(null);
+          return;
+        }
+        const { from, to } = e.state.selection;
+        const start = e.view.coordsAtPos(from);
+        const end = e.view.coordsAtPos(to);
+        const editorRect = editorEl!.getBoundingClientRect();
+        setBubbleMenu({
+          top: start.top - editorRect.top - 40,
+          left: (start.left + end.left) / 2 - editorRect.left,
+        });
       },
     });
   }
@@ -349,11 +363,8 @@ function App() {
           <span class="brand">mem</span>
         </div>
         <div class="topbar-right">
-          <button class="topbar-btn" onClick={openPalette}>
-            Notes <kbd>{"\u2318"}P</kbd>
-          </button>
-          <button class="topbar-btn" onClick={() => { if (dirty()) saveNote().then(newBlankNote); else newBlankNote(); }}>
-            New <kbd>{"\u2318"}N</kbd>
+          <button class="topbar-btn theme-toggle" onClick={toggleTheme}>
+            {theme() === "light" ? "\u263E" : "\u2600"}
           </button>
           <Show when={dirty()}>
             <button class="topbar-btn" onClick={saveNote}>
@@ -365,8 +376,11 @@ function App() {
               {"\u2715"}
             </button>
           </Show>
-          <button class="topbar-btn" onClick={toggleTheme}>
-            {theme() === "light" ? "\u263E" : "\u2600"}
+          <button class="topbar-btn" onClick={openPalette}>
+            Notes <kbd>{"\u2318"}P</kbd>
+          </button>
+          <button class="topbar-btn" onClick={() => { if (dirty()) saveNote().then(newBlankNote); else newBlankNote(); }}>
+            New <kbd>{"\u2318"}N</kbd>
           </button>
         </div>
       </div>
@@ -384,7 +398,17 @@ function App() {
           <Show when={currentNote()}>
             <div class="title-date">{formatDate()}</div>
           </Show>
-          <div class="editor-mount" ref={editorEl!} />
+          <div class="editor-wrap">
+            <Show when={bubbleMenu()}>
+              <div class="bubble-menu" style={{ top: `${bubbleMenu()!.top}px`, left: `${bubbleMenu()!.left}px` }}>
+                <button class="bubble-btn" onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleBold().run(); }} classList={{ active: editor?.isActive("bold") }}>B</button>
+                <button class="bubble-btn" onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleItalic().run(); }} classList={{ active: editor?.isActive("italic") }}><em>I</em></button>
+                <button class="bubble-btn" onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleStrike().run(); }} classList={{ active: editor?.isActive("strike") }}><s>S</s></button>
+                <button class="bubble-btn" onMouseDown={(e) => { e.preventDefault(); editor?.chain().focus().toggleCode().run(); }} classList={{ active: editor?.isActive("code") }}>&lt;/&gt;</button>
+              </div>
+            </Show>
+            <div class="editor-mount" ref={editorEl!} />
+          </div>
         </div>
       </div>
 
