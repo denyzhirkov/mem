@@ -20,10 +20,21 @@ echo ""
 echo "  Bumping to v${NEW}"
 echo "  ─────────────────"
 
-# All Cargo.toml files — replace ALL version = "x.y.z" patterns
+# All Cargo.toml files — replace only [package] version (first occurrence)
 find "$ROOT/crates" "$ROOT/apps/desktop/src-tauri" -name "Cargo.toml" | while read -r f; do
-  sed -i '' -E 's/version = "[0-9]+\.[0-9]+\.[0-9]+"/version = "'"$NEW"'"/g' "$f"
+  # Replace only the version line in [package] section (lines 1-5 typically)
+  awk -v new="$NEW" '
+    /^\[package\]/ { in_pkg=1 }
+    /^\[/ && !/^\[package\]/ { in_pkg=0 }
+    in_pkg && /^version = "/ { sub(/version = "[^"]+"/, "version = \"" new "\""); in_pkg=0 }
+    { print }
+  ' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
   echo "  Cargo: $(echo "$f" | sed "s|$ROOT/||")"
+done
+
+# Also update internal workspace dependency versions (mem-* crates)
+find "$ROOT/crates" "$ROOT/apps/desktop/src-tauri" -name "Cargo.toml" | while read -r f; do
+  sed -i '' -E 's/(mem-[a-z]+.*version = ")[0-9]+\.[0-9]+\.[0-9]+/\1'"$NEW"'/g' "$f"
 done
 
 # tauri.conf.json
@@ -45,5 +56,5 @@ echo ""
 echo "    git add -A"
 echo "    git commit -m \"release v${NEW}\""
 echo "    git tag v${NEW}"
-echo "    git push origin main --tags"
+echo "    git push origin master --tags"
 echo ""
