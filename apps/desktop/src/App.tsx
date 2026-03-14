@@ -1,5 +1,6 @@
 import { createSignal, createEffect, createMemo, onMount, onCleanup, Show } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Editor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { Markdown } from "tiptap-markdown";
@@ -45,7 +46,11 @@ function App() {
   let maxTimer: any = null;
 
   // ===== Theme =====
-  createEffect(() => document.documentElement.setAttribute("data-theme", theme()));
+  createEffect(() => {
+    const t = theme();
+    document.documentElement.setAttribute("data-theme", t);
+    getCurrentWindow().setTheme(t === "dark" ? "dark" : "light");
+  });
   const toggleTheme = () => setTheme(t => t === "light" ? "dark" : "light");
 
   // ===== Editor =====

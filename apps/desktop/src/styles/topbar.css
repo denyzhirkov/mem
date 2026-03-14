@@ -36,6 +36,12 @@
   align-items: center;
   gap: 5px;
 }
+.topbar-btn-dim {
+  opacity: 0.7;
+}
+.topbar-btn-dim:hover {
+  opacity: 1;
+}
 .topbar-btn:hover {
   color: var(--text);
   background: var(--bg-hover);

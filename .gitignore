@@ -29,4 +29,5 @@ apps/desktop/src-tauri/gen/
 .tsk/
 .mem/
 
+.cursor/
 CLAUDE.md

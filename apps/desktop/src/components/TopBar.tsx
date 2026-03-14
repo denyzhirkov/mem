@@ -32,8 +32,13 @@ export default function TopBar(props: Props) {
         <button class="topbar-btn theme-toggle" onClick={props.onToggleTheme} title="Toggle theme">
           {props.theme() === "light" ? "\u263E" : "\u2600"}
         </button>
+        <Show when={props.hasNote()}>
+          <button class="topbar-btn topbar-btn-dim" onClick={props.onDelete} style={{ color: "var(--danger)" }} title="Delete note">
+            {"\u2715"}
+          </button>
+        </Show>
         <button
-          class="topbar-btn"
+          class="topbar-btn topbar-btn-dim"
           classList={{ "topbar-btn-active": props.showGraph() }}
           onClick={props.onToggleGraph}
           title="Tag graph"
@@ -45,15 +50,10 @@ export default function TopBar(props: Props) {
             Save <div class="save-dot" />
           </button>
         </Show>
-        <Show when={props.hasNote()}>
-          <button class="topbar-btn" onClick={props.onDelete} style={{ color: "var(--danger)" }} title="Delete note">
-            {"\u2715"}
-          </button>
-        </Show>
-        <button class="topbar-btn" onClick={props.onOpenPalette} title={`Search notes (${mod}P)`}>
+        <button class="topbar-btn topbar-btn-dim" onClick={props.onOpenPalette} title={`Search notes (${mod}P)`}>
           Notes <kbd>{mod}P</kbd>
         </button>
-        <button class="topbar-btn" onClick={props.onNewNote} title={`New note (${mod}N)`}>
+        <button class="topbar-btn topbar-btn-dim" onClick={props.onNewNote} title={`New note (${mod}N)`}>
           New <kbd>{mod}N</kbd>
         </button>
       </div>
