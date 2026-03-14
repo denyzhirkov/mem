@@ -18,6 +18,9 @@ sed -i '' "s/^version = \".*\"/version = \"${VERSION}\"/" "$ROOT/Cargo.toml"
 # 2. package.json (source for frontend __APP_VERSION__)
 sed -i '' "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" "$ROOT/apps/desktop/package.json"
 
+git tag "v${VERSION}"
+
 echo "Bumped to v${VERSION}"
 echo "  -> Cargo.toml [workspace.package]"
 echo "  -> apps/desktop/package.json"
+echo "  -> tag v${VERSION}"
