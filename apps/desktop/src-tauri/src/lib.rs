@@ -297,7 +297,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
-            let vault_path = dirs::home_dir().expect("Home dir not found").join(".mem-vault");
+            let vault_path = mem_storage::vault::default_vault_path();
             if !mem_storage::vault::is_valid_vault(&vault_path) {
                 init_vault(&vault_path, Some("Personal".to_string())).expect("Failed to init vault");
             }

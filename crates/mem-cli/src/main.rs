@@ -2,9 +2,10 @@ use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
 use anyhow::{Context, Result};
 use chrono::Utc;
+use dialoguer::Select;
 
 use mem_domain::{Note, NoteId};
-use mem_storage::vault::init_vault;
+use mem_storage::vault::{init_vault, is_valid_vault, default_vault_path};
 use mem_storage::config::load_config;
 use mem_storage::storage::{write_note, read_note_raw};
 use mem_index::db::IndexDb;
@@ -107,26 +108,90 @@ fn open_db(vault_path: &PathBuf) -> Result<IndexDb> {
     IndexDb::open(&db_path).context("Failed to open index database")
 }
 
+/// Resolve vault path: current dir if it's a vault, otherwise ask the user.
+fn resolve_vault_path() -> Result<PathBuf> {
+    let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+
+    if is_valid_vault(&current_dir) {
+        return Ok(current_dir);
+    }
+
+    let global_path = default_vault_path();
+    let global_exists = is_valid_vault(&global_path);
+
+    if global_exists {
+        let items = vec![
+            format!("Use global vault ({})", global_path.display()),
+            format!("Create a new vault here ({})", current_dir.display()),
+        ];
+
+        println!("No vault found in the current directory.");
+        let selection = Select::new()
+            .with_prompt("What would you like to do?")
+            .items(&items)
+            .default(0)
+            .interact()
+            .context("Failed to read selection")?;
+
+        match selection {
+            0 => Ok(global_path),
+            1 => {
+                let config = init_vault(&current_dir, None)
+                    .with_context(|| format!("Failed to initialize vault at {}", current_dir.display()))?;
+                let _db = open_db(&current_dir)?;
+                println!("Initialized vault '{}' at {}", config.vault_name, current_dir.display());
+                Ok(current_dir)
+            }
+            _ => unreachable!(),
+        }
+    } else {
+        let items = vec![
+            format!("Create a new vault here ({})", current_dir.display()),
+            format!("Create global vault ({})", global_path.display()),
+        ];
+
+        println!("No vault found anywhere.");
+        let selection = Select::new()
+            .with_prompt("Where would you like to create a vault?")
+            .items(&items)
+            .default(0)
+            .interact()
+            .context("Failed to read selection")?;
+
+        let target = match selection {
+            0 => &current_dir,
+            1 => &global_path,
+            _ => unreachable!(),
+        };
+
+        let config = init_vault(target, None)
+            .with_context(|| format!("Failed to initialize vault at {}", target.display()))?;
+        let _db = open_db(target)?;
+        println!("Initialized vault '{}' at {}", config.vault_name, target.display());
+        Ok(target.clone())
+    }
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
 
     match cli.command {
         Commands::Init { path, name } => {
+            let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
             let p = path.unwrap_or(current_dir);
             let config = init_vault(&p, name)
                 .with_context(|| format!("Failed to initialize vault at {}", p.display()))?;
-            
-            // Also initialize the db
+
             let _db = open_db(&p)?;
-            
+
             println!("Initialized vault '{}' at {}", config.vault_name, p.display());
             println!("Created .mem internal directory and notes/ folder.");
         }
         Commands::Note(note_args) => {
-            let config = load_config(&current_dir).context("Not a mem vault (missing mem.json)")?;
-            let mut db = open_db(&current_dir)?;
-            
+            let vault_path = resolve_vault_path()?;
+            let config = load_config(&vault_path).context("Not a mem vault (missing mem.json)")?;
+            let mut db = open_db(&vault_path)?;
+
             match note_args.command {
                 NoteCommands::New { title } => {
                     let mut note = Note {
@@ -138,14 +203,14 @@ fn main() -> Result<()> {
                         updated_at: Utc::now(),
                         tags: vec![],
                         outgoing_links: vec![],
-                        content_hash: "empty".to_string(), // MVP: simplified static hash or skip
+                        content_hash: "empty".to_string(),
                         archived: false,
                     };
-                    
+
                     let content = format!("# {}\n\n", title);
-                    let path = write_note(&current_dir, &config, &mut note, &content)?;
+                    let path = write_note(&vault_path, &config, &mut note, &content)?;
                     db.upsert_note(&note)?;
-                    
+
                     println!("Created new note '{}' at {}", title, path.display());
                     println!("ID: {}", note.id.0);
                 }
@@ -164,17 +229,18 @@ fn main() -> Result<()> {
                 NoteCommands::Show { id_or_slug } => {
                     let mut stmt = db.conn().prepare("SELECT path FROM notes WHERE id = ?1 OR slug = ?1 LIMIT 1")?;
                     let path: String = stmt.query_row([&id_or_slug], |row| row.get(0)).context("Note not found")?;
-                    
+
                     let content = read_note_raw(&PathBuf::from(&path))?;
                     println!("{}", content);
                 }
             }
         }
         Commands::Search { query } => {
-            let config = load_config(&current_dir).context("Not a mem vault (missing mem.json)")?;
-            let db = open_db(&current_dir)?;
+            let vault_path = resolve_vault_path()?;
+            let _config = load_config(&vault_path).context("Not a mem vault (missing mem.json)")?;
+            let db = open_db(&vault_path)?;
             let results = db.search(&query)?;
-            
+
             if results.is_empty() {
                 println!("No results found.");
             } else {
@@ -184,14 +250,15 @@ fn main() -> Result<()> {
             }
         }
         Commands::Sync { command } => {
-            let _config = load_config(&current_dir).context("Not a mem vault (missing mem.json)")?;
+            let vault_path = resolve_vault_path()?;
+            let _config = load_config(&vault_path).context("Not a mem vault (missing mem.json)")?;
             match command {
                 SyncCommands::Status => {
-                    let status = mem_sync::sync_status(&current_dir)?;
+                    let status = mem_sync::sync_status(&vault_path)?;
                     if status.is_empty() {
                         println!("Tree is clean.");
                     } else {
-                        let has_conflicts = mem_sync::check_conflicts(&current_dir)?;
+                        let has_conflicts = mem_sync::check_conflicts(&vault_path)?;
                         if has_conflicts {
                             println!("WARNING: Conflicts detected in current tree!");
                         }
@@ -199,15 +266,15 @@ fn main() -> Result<()> {
                     }
                 }
                 SyncCommands::Commit { message } => {
-                    mem_sync::commit_all(&current_dir, &message)?;
+                    mem_sync::commit_all(&vault_path, &message)?;
                     println!("Committed changes.");
                 }
                 SyncCommands::Pull => {
-                    let out = mem_sync::pull(&current_dir)?;
+                    let out = mem_sync::pull(&vault_path)?;
                     println!("{}", out);
                 }
                 SyncCommands::Push => {
-                    let out = mem_sync::push(&current_dir)?;
+                    let out = mem_sync::push(&vault_path)?;
                     println!("{}", out);
                 }
             }
@@ -215,12 +282,13 @@ fn main() -> Result<()> {
         Commands::Index { command } => {
             match command {
                 IndexCommands::Rebuild => {
-                    let _config = load_config(&current_dir).context("Not a mem vault (missing mem.json)")?;
+                    let vault_path = resolve_vault_path()?;
+                    let _config = load_config(&vault_path).context("Not a mem vault (missing mem.json)")?;
                     println!("Index rebuild is not fully implemented in MVP yet, but SQLite is ready.");
                 }
             }
         }
     }
-    
+
     Ok(())
 }

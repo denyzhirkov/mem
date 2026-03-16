@@ -1,8 +1,15 @@
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use thiserror::Error;
 use mem_domain::VaultConfig;
 use crate::config;
+
+/// Returns the default global vault path (~/.mem-vault)
+pub fn default_vault_path() -> PathBuf {
+    dirs::home_dir()
+        .expect("Home directory not found")
+        .join(".mem-vault")
+}
 
 #[derive(Error, Debug)]
 pub enum VaultError {
