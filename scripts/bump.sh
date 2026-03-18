@@ -18,9 +18,12 @@ sed -i '' "s/^version = \".*\"/version = \"${VERSION}\"/" "$ROOT/Cargo.toml"
 # 2. package.json (source for frontend __APP_VERSION__)
 sed -i '' "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" "$ROOT/apps/desktop/package.json"
 
+# 3. Commit and tag (tag must point to the commit with the new version)
+git add "$ROOT/Cargo.toml" "$ROOT/apps/desktop/package.json"
+git commit -m "release v${VERSION}"
 git tag "v${VERSION}"
 
 echo "Bumped to v${VERSION}"
 echo "  -> Cargo.toml [workspace.package]"
 echo "  -> apps/desktop/package.json"
-echo "  -> tag v${VERSION}"
+echo "  -> committed and tagged v${VERSION}"
