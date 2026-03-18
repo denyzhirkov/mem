@@ -1,14 +1,16 @@
 use clap::{Args, Parser, Subcommand};
+use std::io::Read as _;
 use std::path::PathBuf;
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use chrono::Utc;
 use dialoguer::Select;
 
 use mem_domain::{Note, NoteId};
 use mem_storage::vault::{init_vault, is_valid_vault, default_vault_path};
 use mem_storage::config::load_config;
-use mem_storage::storage::{write_note, read_note_raw};
+use mem_storage::storage::{write_note, read_note_raw, read_note_content};
 use mem_index::db::IndexDb;
+use mem_parser::{extract_tags, extract_links};
 
 #[derive(Parser, Debug)]
 #[command(name = "mem")]
@@ -85,6 +87,29 @@ enum NoteCommands {
     /// Show note raw content
     Show {
         id_or_slug: String,
+    },
+    /// Update an existing note
+    Update {
+        /// Note ID or slug
+        id_or_slug: String,
+        /// Set a new title
+        #[arg(short, long)]
+        title: Option<String>,
+        /// Replace body content
+        #[arg(short, long)]
+        body: Option<String>,
+        /// Append text to the end
+        #[arg(short, long)]
+        append: Option<String>,
+        /// Read new body from stdin
+        #[arg(long)]
+        stdin: bool,
+        /// Archive the note
+        #[arg(long)]
+        archive: bool,
+        /// Unarchive the note
+        #[arg(long)]
+        unarchive: bool,
     },
 }
 
@@ -232,6 +257,102 @@ fn main() -> Result<()> {
 
                     let content = read_note_raw(&PathBuf::from(&path))?;
                     println!("{}", content);
+                }
+                NoteCommands::Update { id_or_slug, title, body, append, stdin, archive, unarchive } => {
+                    if title.is_none() && body.is_none() && append.is_none() && !stdin && !archive && !unarchive {
+                        bail!("Nothing to update. Use --title, --body, --append, --stdin, --archive, or --unarchive.");
+                    }
+
+                    let mut stmt = db.conn().prepare(
+                        "SELECT id, title, slug, path, created_at, updated_at, content_hash, archived FROM notes WHERE id = ?1 OR slug = ?1 LIMIT 1"
+                    )?;
+                    let mut note: Note = stmt.query_row([&id_or_slug], |row| {
+                        let created_at_str: String = row.get(4)?;
+                        let updated_at_str: String = row.get(5)?;
+                        let created_at = chrono::DateTime::parse_from_rfc3339(&created_at_str)
+                            .map(|dt| dt.with_timezone(&Utc))
+                            .unwrap_or_else(|_| Utc::now());
+                        let updated_at = chrono::DateTime::parse_from_rfc3339(&updated_at_str)
+                            .map(|dt| dt.with_timezone(&Utc))
+                            .unwrap_or_else(|_| Utc::now());
+                        Ok(Note {
+                            id: NoteId(row.get(0)?),
+                            title: row.get(1)?,
+                            slug: row.get(2)?,
+                            path: row.get(3)?,
+                            created_at,
+                            updated_at,
+                            tags: vec![],
+                            outgoing_links: vec![],
+                            content_hash: row.get(6)?,
+                            archived: row.get(7)?,
+                        })
+                    }).context("Note not found")?;
+                    drop(stmt);
+
+                    // Read current content (without frontmatter)
+                    let mut content = read_note_content(&PathBuf::from(&note.path))?;
+
+                    if let Some(new_title) = &title {
+                        note.title = new_title.clone();
+                        note.slug = generate_slug(new_title);
+                        // Replace H1 heading if present
+                        if let Some(first_line_end) = content.find('\n') {
+                            if content.starts_with("# ") {
+                                content = format!("# {}{}", new_title, &content[first_line_end..]);
+                            }
+                        } else if content.starts_with("# ") {
+                            content = format!("# {}\n\n", new_title);
+                        }
+                    }
+
+                    if let Some(new_body) = body {
+                        // Keep H1 line, replace the rest
+                        if let Some(first_line_end) = content.find('\n') {
+                            if content.starts_with("# ") {
+                                content = format!("{}\n\n{}", &content[..first_line_end], new_body);
+                            } else {
+                                content = new_body;
+                            }
+                        } else {
+                            content = new_body;
+                        }
+                    } else if stdin {
+                        let mut stdin_content = String::new();
+                        std::io::stdin().read_to_string(&mut stdin_content)?;
+                        if let Some(first_line_end) = content.find('\n') {
+                            if content.starts_with("# ") {
+                                content = format!("{}\n\n{}", &content[..first_line_end], stdin_content);
+                            } else {
+                                content = stdin_content;
+                            }
+                        } else {
+                            content = stdin_content;
+                        }
+                    }
+
+                    if let Some(extra) = append {
+                        if !content.ends_with('\n') {
+                            content.push('\n');
+                        }
+                        content.push_str(&extra);
+                        content.push('\n');
+                    }
+
+                    if archive {
+                        note.archived = true;
+                    }
+                    if unarchive {
+                        note.archived = false;
+                    }
+
+                    note.tags = extract_tags(&content);
+                    note.outgoing_links = extract_links(&content);
+
+                    write_note(&vault_path, &config, &mut note, &content)?;
+                    db.upsert_note_with_content(&note, Some(&content))?;
+
+                    println!("Updated note '{}'", note.title);
                 }
             }
         }
