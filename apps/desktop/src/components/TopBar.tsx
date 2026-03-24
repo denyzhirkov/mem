@@ -33,7 +33,15 @@ export default function TopBar(props: Props) {
           {props.theme() === "light" ? "\u263E" : "\u2600"}
         </button>
         <Show when={props.hasNote()}>
-          <button class="topbar-btn topbar-btn-dim" onClick={props.onDelete} style={{ color: "var(--danger)" }} title="Delete note">
+          <button
+            class="topbar-btn topbar-btn-dim"
+            onClick={props.onDelete}
+            style={{
+              color: "var(--danger)",
+              ...(props.showGraph() ? { visibility: "hidden", "pointer-events": "none" } : {}),
+            }}
+            title="Delete note"
+          >
             {"\u2715"}
           </button>
         </Show>
