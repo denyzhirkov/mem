@@ -15,29 +15,34 @@ jobs:
         include:
           - os: macos-latest
             target: aarch64-apple-darwin
-            name: mem-darwin-aarch64
+            platform: darwin-aarch64
           - os: macos-latest
             target: x86_64-apple-darwin
-            name: mem-darwin-x86_64
+            platform: darwin-x86_64
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            name: mem-linux-x86_64
+            platform: linux-x86_64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-      - name: Build CLI
-        run: cargo build --release --target ${{ matrix.target }} -p mem-cli
-      - name: Rename binary
+      - name: Build CLI and MCP server
         run: |
-          cp target/${{ matrix.target }}/release/mem ${{ matrix.name }}
-          chmod +x ${{ matrix.name }}
+          cargo build --release --target ${{ matrix.target }} -p mem-cli
+          cargo build --release --target ${{ matrix.target }} -p mem-mcp
+      - name: Rename binaries
+        run: |
+          cp target/${{ matrix.target }}/release/mem mem-${{ matrix.platform }}
+          cp target/${{ matrix.target }}/release/mem-mcp mem-mcp-${{ matrix.platform }}
+          chmod +x mem-${{ matrix.platform }} mem-mcp-${{ matrix.platform }}
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.name }}
-          path: ${{ matrix.name }}
+          name: cli-${{ matrix.platform }}
+          path: |
+            mem-${{ matrix.platform }}
+            mem-mcp-${{ matrix.platform }}
 
   build-desktop:
     strategy:
