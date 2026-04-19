@@ -1,0 +1,22 @@
+[package]
+name = "mem-mcp"
+version.workspace = true
+edition = "2024"
+
+[[bin]]
+name = "mem-mcp"
+path = "src/main.rs"
+
+[dependencies]
+mem-core = { version = "1.7.1", path = "../mem-core", features = ["schemars"] }
+rmcp = { version = "0.8", features = ["server", "macros", "transport-io", "schemars"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-std", "sync"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+schemars = "1"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+tempfile = "3"

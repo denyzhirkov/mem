@@ -1,0 +1,24 @@
+[package]
+name = "mem-core"
+version.workspace = true
+edition = "2024"
+
+[dependencies]
+mem-domain = { version = "1.2.0", path = "../mem-domain" }
+mem-storage = { version = "1.2.0", path = "../mem-storage" }
+mem-index = { version = "1.2.0", path = "../mem-index" }
+mem-parser = { version = "1.2.0", path = "../mem-parser" }
+mem-sync = { version = "1.2.0", path = "../mem-sync" }
+chrono = { version = "0.4.44", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+schemars = { version = "1", optional = true }
+thiserror = "2.0.18"
+rusqlite = { version = "0.38.0", features = ["bundled"] }
+
+[features]
+default = []
+schemars = ["dep:schemars"]
+
+[dev-dependencies]
+tempfile = "3"

@@ -22,7 +22,7 @@ esac
 PLATFORM="${OS}-${ARCH}"
 
 # ── CLI ──
-echo "[1/2] Building CLI..."
+echo "[1/3] Building CLI..."
 cargo build --release --manifest-path "$ROOT/Cargo.toml" -p mem-cli
 
 CLI_BIN="$ROOT/target/release/mem"
@@ -35,8 +35,22 @@ else
   exit 1
 fi
 
+# ── MCP server ──
+echo "[2/3] Building MCP server..."
+cargo build --release --manifest-path "$ROOT/Cargo.toml" -p mem-mcp
+
+MCP_BIN="$ROOT/target/release/mem-mcp"
+if [ -f "$MCP_BIN" ]; then
+  cp "$MCP_BIN" "$DIST/mem-mcp-${PLATFORM}"
+  chmod +x "$DIST/mem-mcp-${PLATFORM}"
+  echo "  -> dist/mem-mcp-${PLATFORM}"
+else
+  echo "  ERROR: MCP binary not found"
+  exit 1
+fi
+
 # ── Desktop ──
-echo "[2/2] Building desktop app..."
+echo "[3/3] Building desktop app..."
 cd "$ROOT/apps/desktop"
 [ -d "node_modules" ] || npm install
 npx tauri build 2>&1 | tail -5

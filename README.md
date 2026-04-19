@@ -60,16 +60,41 @@ Auto-save kicks in after you stop typing or every ~80 characters.
 ### CLI
 
 ```bash
-mem init                        # create a vault in current directory
-mem note new "My idea"          # create a note
-mem note list                   # list all notes
-mem note show <id-or-slug>      # print note content
-mem search "query"              # search notes
-mem sync status                 # git status
-mem sync commit "update notes"  # git commit
-mem sync pull                   # git pull
-mem sync push                   # git push
+mem init                             # create a vault in current directory
+mem note new "My idea"               # create a note
+mem note new "Idea" -b "body text"   # create with body (or --stdin)
+mem note list                        # list all notes
+mem note list --tag rust             # filter by tag
+mem note show <id-or-slug>           # print note content
+mem note update <id> --title "New"   # rename (file gets renamed too)
+mem note delete <id-or-slug>         # delete a note
+mem note related <id-or-slug>        # notes sharing tags
+mem search "query"                   # search notes
+mem tags list                        # all tags with counts
+mem sync status                      # git status
+mem sync commit "update notes"       # git commit
+mem sync pull                        # git pull
+mem sync push                        # git push
 ```
+
+### MCP (AI assistants)
+
+`mem-mcp` exposes your vault to MCP clients (Claude Desktop, Claude Code,
+Cursor, etc.) over stdio — agents can create, search, update, and sync notes
+as structured tool calls.
+
+```json
+{
+  "mcpServers": {
+    "mem": {
+      "command": "mem-mcp",
+      "env": { "MEM_VAULT": "/absolute/path/to/vault" }
+    }
+  }
+}
+```
+
+See [docs/mcp.md](docs/mcp.md) for the full tool list and configuration.
 
 ## How it works
 
@@ -110,8 +135,8 @@ npx tauri dev
 
 ### Stack
 
-- **Core**: Rust workspace (domain, storage, index, parser, sync)
-- **Desktop**: Tauri + SolidJS + Tiptap
+- **Core**: Rust workspace (`mem-domain`, `mem-storage`, `mem-index`, `mem-parser`, `mem-sync`, `mem-core`)
+- **Interfaces**: `mem-cli` (terminal), `mem-mcp` (MCP server), `mem-desktop` (Tauri + SolidJS + Tiptap)
 - **Search**: SQLite FTS5
 - **Sync**: Git CLI wrapper
 

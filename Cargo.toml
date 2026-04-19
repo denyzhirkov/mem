@@ -6,7 +6,9 @@ members = [
     "crates/mem-parser",
     "crates/mem-sync",
     "crates/mem-app-api",
+    "crates/mem-core",
     "crates/mem-cli",
+    "crates/mem-mcp",
     "apps/desktop/src-tauri",
 ]
 resolver = "2"

@@ -48,24 +48,27 @@ echo "  Version:  ${VERSION}"
 echo "  Platform: ${PLATFORM}"
 echo ""
 
-# ── CLI ──
+# ── CLI + MCP ──
 if [ "$APP_ONLY" = false ]; then
-  echo "[1/2] Installing CLI..."
+  echo "[1/2] Installing CLI and MCP server..."
 
-  CLI_BINARY="mem-${PLATFORM}"
-  CLI_URL="${BASE_URL}/${CLI_BINARY}"
-  TMPFILE="$(mktemp)"
+  mkdir -p "$CLI_DIR"
 
-  if curl -fsSL "$CLI_URL" -o "$TMPFILE" 2>/dev/null; then
-    chmod +x "$TMPFILE"
-    mkdir -p "$CLI_DIR"
-    mv "$TMPFILE" "$CLI_DIR/mem"
-    echo "  -> $CLI_DIR/mem"
-  else
-    echo "  CLI binary not found at ${CLI_URL}"
-    echo "  Skipping CLI install."
-    rm -f "$TMPFILE"
-  fi
+  for name in mem mem-mcp; do
+    BINARY="${name}-${PLATFORM}"
+    URL="${BASE_URL}/${BINARY}"
+    TMPFILE="$(mktemp)"
+
+    if curl -fsSL "$URL" -o "$TMPFILE" 2>/dev/null; then
+      chmod +x "$TMPFILE"
+      mv "$TMPFILE" "$CLI_DIR/${name}"
+      echo "  -> $CLI_DIR/${name}"
+    else
+      echo "  ${name} binary not found at ${URL}"
+      echo "  Skipping ${name} install."
+      rm -f "$TMPFILE"
+    fi
+  done
 
   # Check PATH
   if ! echo "$PATH" | tr ':' '\n' | grep -qx "$CLI_DIR"; then
