@@ -26,3 +26,22 @@ fn server_exposes_expected_tools() {
         assert!(names.contains(expected), "missing tool: {expected}");
     }
 }
+
+#[test]
+fn all_tools_have_object_output_schema() {
+    let server = MemServer::new();
+    for t in server.tool_router_snapshot() {
+        let schema = t
+            .output_schema
+            .as_ref()
+            .unwrap_or_else(|| panic!("tool {} has no output_schema", t.name));
+        let ty = schema.get("type").and_then(|v| v.as_str());
+        assert_eq!(
+            ty,
+            Some("object"),
+            "tool {} outputSchema missing type:object; got {}",
+            t.name,
+            serde_json::to_string(schema).unwrap()
+        );
+    }
+}

@@ -64,7 +64,7 @@ impl MemServer {
     async fn note_list(
         &self,
         Parameters(args): Parameters<NoteListArgs>,
-    ) -> Result<Json<Vec<mem_core::NoteRef>>, McpError> {
+    ) -> Result<Json<ListResponse<mem_core::NoteRef>>, McpError> {
         let v = Self::resolve(args.vault_path.as_deref())?;
         note::list(
             &v,
@@ -75,7 +75,7 @@ impl MemServer {
                 limit: args.limit,
             },
         )
-        .map(Json)
+        .map(|items| Json(ListResponse::new(items)))
         .map_err(core_to_mcp)
     }
 
@@ -86,7 +86,7 @@ impl MemServer {
     async fn note_related(
         &self,
         Parameters(args): Parameters<NoteRelatedArgs>,
-    ) -> Result<Json<Vec<mem_core::NoteRef>>, McpError> {
+    ) -> Result<Json<ListResponse<mem_core::NoteRef>>, McpError> {
         let v = Self::resolve(args.vault_path.as_deref())?;
         note::related(
             &v,
@@ -95,7 +95,7 @@ impl MemServer {
                 limit: args.limit,
             },
         )
-        .map(Json)
+        .map(|items| Json(ListResponse::new(items)))
         .map_err(core_to_mcp)
     }
 
@@ -106,9 +106,11 @@ impl MemServer {
     async fn tags_list(
         &self,
         Parameters(args): Parameters<VaultRef>,
-    ) -> Result<Json<Vec<mem_core::TagInfo>>, McpError> {
+    ) -> Result<Json<ListResponse<mem_core::TagInfo>>, McpError> {
         let v = Self::resolve(args.vault_path.as_deref())?;
-        tags::list(&v).map(Json).map_err(core_to_mcp)
+        tags::list(&v)
+            .map(|items| Json(ListResponse::new(items)))
+            .map_err(core_to_mcp)
     }
 
     #[tool(
@@ -159,10 +161,10 @@ impl MemServer {
     async fn note_delete(
         &self,
         Parameters(args): Parameters<NoteDeleteArgs>,
-    ) -> Result<Json<serde_json::Value>, McpError> {
+    ) -> Result<Json<OkResponse>, McpError> {
         let v = Self::resolve(args.vault_path.as_deref())?;
         note::delete(&v, &args.id_or_slug).map_err(core_to_mcp)?;
-        Ok(Json(serde_json::json!({"ok": true})))
+        Ok(Json(OkResponse { ok: true }))
     }
 
     #[tool(
@@ -172,7 +174,7 @@ impl MemServer {
     async fn search(
         &self,
         Parameters(args): Parameters<SearchArgs>,
-    ) -> Result<Json<Vec<mem_core::SearchHit>>, McpError> {
+    ) -> Result<Json<ListResponse<mem_core::SearchHit>>, McpError> {
         let v = Self::resolve(args.vault_path.as_deref())?;
         search::run(
             &v,
@@ -181,7 +183,7 @@ impl MemServer {
                 limit: args.limit,
             },
         )
-        .map(Json)
+        .map(|items| Json(ListResponse::new(items)))
         .map_err(core_to_mcp)
     }
 
@@ -198,30 +200,30 @@ impl MemServer {
     async fn sync_commit(
         &self,
         Parameters(args): Parameters<SyncCommitArgs>,
-    ) -> Result<Json<serde_json::Value>, McpError> {
+    ) -> Result<Json<OkResponse>, McpError> {
         let v = Self::resolve(args.vault_path.as_deref())?;
         sync::commit(&v, &args.message).map_err(core_to_mcp)?;
-        Ok(Json(serde_json::json!({"ok": true})))
+        Ok(Json(OkResponse { ok: true }))
     }
 
     #[tool(name = "sync_pull", description = "Pull changes from the remote.")]
     async fn sync_pull(
         &self,
         Parameters(args): Parameters<VaultRef>,
-    ) -> Result<Json<serde_json::Value>, McpError> {
+    ) -> Result<Json<OutputResponse>, McpError> {
         let v = Self::resolve(args.vault_path.as_deref())?;
         let out = sync::pull(&v).map_err(core_to_mcp)?;
-        Ok(Json(serde_json::json!({"output": out})))
+        Ok(Json(OutputResponse { output: out }))
     }
 
     #[tool(name = "sync_push", description = "Push changes to the remote.")]
     async fn sync_push(
         &self,
         Parameters(args): Parameters<VaultRef>,
-    ) -> Result<Json<serde_json::Value>, McpError> {
+    ) -> Result<Json<OutputResponse>, McpError> {
         let v = Self::resolve(args.vault_path.as_deref())?;
         let out = sync::push(&v).map_err(core_to_mcp)?;
-        Ok(Json(serde_json::json!({"output": out})))
+        Ok(Json(OutputResponse { output: out }))
     }
 
     #[tool(
@@ -231,10 +233,10 @@ impl MemServer {
     async fn index_rebuild(
         &self,
         Parameters(args): Parameters<VaultRef>,
-    ) -> Result<Json<serde_json::Value>, McpError> {
+    ) -> Result<Json<OkResponse>, McpError> {
         let v = Self::resolve(args.vault_path.as_deref())?;
         mem_core::index::rebuild(&v).map_err(core_to_mcp)?;
-        Ok(Json(serde_json::json!({"ok": true})))
+        Ok(Json(OkResponse { ok: true }))
     }
 }
 
