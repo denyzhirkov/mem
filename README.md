@@ -87,11 +87,18 @@ as structured tool calls.
 {
   "mcpServers": {
     "mem": {
-      "command": "mem-mcp",
-      "env": { "MEM_VAULT": "/absolute/path/to/vault" }
+      "type": "stdio",
+      "command": "mem-mcp"
     }
   }
 }
+```
+
+By default the server uses the global vault at `~/.mem-vault`. Set
+`MEM_VAULT` in `env` only if your vault lives elsewhere:
+
+```json
+"env": { "MEM_VAULT": "/absolute/path/to/vault" }
 ```
 
 See [docs/mcp.md](docs/mcp.md) for the full tool list and configuration.

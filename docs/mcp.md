@@ -26,11 +26,13 @@ Each tool accepts an optional `vault_path`. When omitted, the server resolves
 the vault in this order:
 
 1. `MEM_VAULT` environment variable
-2. Default global vault (`~/.mem-vault`)
+2. Default global vault — `~/.mem-vault` (on macOS: `/Users/<you>/.mem-vault`)
+
+If you use the default location, you don't need to set anything. `MEM_VAULT`
+is only required when your vault lives somewhere else.
 
 The server is non-interactive — if no vault can be found, the call fails with
-an `invalid_params` error telling the agent to set `MEM_VAULT` or pass
-`vault_path`.
+an `invalid_params` error.
 
 ## Client configuration
 
@@ -42,14 +44,15 @@ Add to `~/.claude.json` (or your project-scoped equivalent):
 {
   "mcpServers": {
     "mem": {
-      "command": "mem-mcp",
-      "env": {
-        "MEM_VAULT": "/absolute/path/to/vault"
-      }
+      "type": "stdio",
+      "command": "mem-mcp"
     }
   }
 }
 ```
+
+Add `"env": { "MEM_VAULT": "/absolute/path/to/vault" }` only if your vault
+isn't at the default `~/.mem-vault`.
 
 ### Cursor
 
@@ -59,8 +62,8 @@ Add to `~/.claude.json` (or your project-scoped equivalent):
 {
   "mcpServers": {
     "mem": {
-      "command": "mem-mcp",
-      "env": { "MEM_VAULT": "/absolute/path/to/vault" }
+      "type": "stdio",
+      "command": "mem-mcp"
     }
   }
 }
