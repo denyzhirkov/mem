@@ -1,5 +1,6 @@
 import { createSignal, createEffect, createMemo, onMount, onCleanup, Show } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Editor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
@@ -29,6 +30,7 @@ function App() {
   const [paletteIndex, setPaletteIndex] = createSignal(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = createSignal(false);
   const [showGraph, setShowGraph] = createSignal(false);
+  const [graphVersion, setGraphVersion] = createSignal(0);
   const [theme, setTheme] = createSignal<"light" | "dark">(
     window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
   );
@@ -304,6 +306,8 @@ function App() {
   }
 
   // ===== Lifecycle =====
+  let unlistenVaultChanged: (() => void) | undefined;
+
   onMount(() => {
     mountEditor();
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -312,11 +316,32 @@ function App() {
       else if ((e.metaKey || e.ctrlKey) && e.key === "n") { e.preventDefault(); handleNewNote(); }
     };
     window.addEventListener("keydown", handleKeyDown);
+
+    listen<void>("vault-changed", async () => {
+      if (showGraph()) {
+        setGraphVersion(v => v + 1);
+      } else if (currentNote() && !dirty()) {
+        try {
+          const content = await invoke<string>("get_note", { id: currentNote()!.id });
+          if (editor && !dirty()) {
+            const pos = editor.state.selection.anchor;
+            editor.commands.setContent(content, false);
+            const maxPos = editor.state.doc.content.size;
+            editor.commands.setTextSelection(Math.min(pos, maxPos));
+          }
+          loadNoteDetails(currentNote()!.id);
+        } catch (e) {
+          console.error("vault-changed:", e);
+        }
+      }
+    }).then(fn => { unlistenVaultChanged = fn; });
+
     onCleanup(() => {
       window.removeEventListener("keydown", handleKeyDown);
       clearTimeout(idleTimer);
       clearTimeout(maxTimer);
       editor?.destroy();
+      unlistenVaultChanged?.();
     });
   });
 
@@ -353,7 +378,7 @@ function App() {
       />
 
       <Show when={showGraph()}>
-        <TagGraph onTagClick={handleTagClick} />
+        <TagGraph onTagClick={handleTagClick} version={graphVersion} />
       </Show>
 
       <div class="canvas" style={{ display: showGraph() ? "none" : undefined }}>

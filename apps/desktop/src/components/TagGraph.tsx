@@ -1,4 +1,4 @@
-import { onMount, onCleanup } from "solid-js";
+import { onMount, onCleanup, createEffect } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import type { TagGraphData } from "../types";
 
@@ -19,6 +19,7 @@ type SimEdge = {
 
 type Props = {
   onTagClick: (tag: string) => void;
+  version: () => number;
 };
 
 export default function TagGraph(props: Props) {
@@ -226,6 +227,11 @@ export default function TagGraph(props: Props) {
     canvas.width = canvas.parentElement!.clientWidth;
     canvas.height = canvas.parentElement!.clientHeight;
   }
+
+  createEffect(async () => {
+    const v = props.version();
+    if (v > 0) await loadData();
+  });
 
   onMount(async () => {
     resize();

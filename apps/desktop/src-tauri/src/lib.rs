@@ -1,12 +1,13 @@
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::{mpsc, Mutex};
+use std::time::{Duration, Instant};
 
 use mem_core::types::{ListParams, RelatedParams, ShowParams, UpdateParams};
 use mem_core::{note, tags, vault};
 use mem_domain::SearchResult;
 use mem_index::db::IndexDb;
 use serde::Serialize;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 pub struct AppState {
     pub db: Mutex<IndexDb>,
@@ -228,8 +229,38 @@ pub fn run() {
 
             app.manage(AppState {
                 db: Mutex::new(db),
-                vault_path,
+                vault_path: vault_path.clone(),
             });
+
+            let app_handle = app.handle().clone();
+            let notes_path = vault_path.join("notes");
+            std::thread::spawn(move || {
+                use notify::{recommended_watcher, Event, RecursiveMode, Watcher};
+                let (tx, rx) = mpsc::channel::<notify::Result<Event>>();
+                let mut watcher = match recommended_watcher(tx) {
+                    Ok(w) => w,
+                    Err(e) => { eprintln!("watcher init: {e}"); return; }
+                };
+                if watcher.watch(&notes_path, RecursiveMode::NonRecursive).is_err() {
+                    return;
+                }
+                let debounce = Duration::from_millis(300);
+                let mut pending = false;
+                let mut last = Instant::now();
+                loop {
+                    match rx.recv_timeout(Duration::from_millis(50)) {
+                        Ok(Ok(_)) => { pending = true; last = Instant::now(); }
+                        Ok(Err(_)) | Err(mpsc::RecvTimeoutError::Timeout) => {
+                            if pending && last.elapsed() >= debounce {
+                                pending = false;
+                                let _ = app_handle.emit("vault-changed", ());
+                            }
+                        }
+                        Err(mpsc::RecvTimeoutError::Disconnected) => break,
+                    }
+                }
+            });
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
