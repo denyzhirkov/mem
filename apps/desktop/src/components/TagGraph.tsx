@@ -98,8 +98,8 @@ export default function TagGraph(props: Props) {
     }
     for (const node of nodes) {
       if (node === dragging) continue;
-      node.vx *= 0.85;
-      node.vy *= 0.85;
+      node.vx *= 0.78;
+      node.vy *= 0.78;
       node.x += node.vx;
       node.y += node.vy;
     }

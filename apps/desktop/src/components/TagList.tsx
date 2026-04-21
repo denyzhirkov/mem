@@ -24,9 +24,11 @@ export default function TagList(props: Props) {
     );
   });
 
-  async function openTag(tag: string, pushHistory = true) {
-    if (pushHistory && selectedTag()) {
-      setHistory(h => [...h, selectedTag()!]);
+  async function openTag(tag: string, prevTag: string | null = null, newHistory?: string[]) {
+    if (newHistory !== undefined) {
+      setHistory(newHistory);
+    } else if (prevTag) {
+      setHistory(h => [...h, prevTag]);
     }
     setSelectedTag(tag);
     const [noteList, related] = await Promise.all([
@@ -34,7 +36,14 @@ export default function TagList(props: Props) {
       invoke<[string, number][]>("related_tags", { tag }),
     ]);
     setNotes(noteList);
-    setRelatedTags(related.map(([name, count]) => ({ name, count })));
+
+    // Move the tag we came from to the end
+    let list = related.map(([name, count]) => ({ name, count }));
+    if (prevTag) {
+      const idx = list.findIndex(t => t.name === prevTag);
+      if (idx >= 0) list = [...list.slice(0, idx), ...list.slice(idx + 1), list[idx]];
+    }
+    setRelatedTags(list);
   }
 
   function goBack() {
@@ -46,12 +55,16 @@ export default function TagList(props: Props) {
       return;
     }
     const prev = h[h.length - 1];
-    setHistory(h => h.slice(0, -1));
-    openTag(prev, false);
+    openTag(prev, null, h.slice(0, -1));
+  }
+
+  function jumpTo(idx: number) {
+    const h = history();
+    openTag(h[idx], null, h.slice(0, idx));
   }
 
   return (
-    <div class="tag-list">
+    <div class="tag-list-view">
       <Show
         when={selectedTag()}
         fallback={
@@ -70,26 +83,17 @@ export default function TagList(props: Props) {
         <div class="tag-list-detail">
           <div class="tag-list-header">
             <button class="tag-list-back" onClick={goBack}>←</button>
-            <span class="tag-list-title">#{selectedTag()}</span>
-            <Show when={history().length > 0}>
-              <span class="tag-list-breadcrumb">
-                {history().map(t => `#${t}`).join(" › ")} ›
-              </span>
-            </Show>
-          </div>
-
-          <div class="tag-list-section">
-            <div class="tag-list-section-label">notes</div>
-            <For each={notes()}>
-              {note => (
-                <button class="tag-list-note" onClick={() => props.onOpenNote(note)}>
-                  {note.title}
-                </button>
-              )}
-            </For>
-            <Show when={notes().length === 0}>
-              <div class="tag-list-empty">no notes</div>
-            </Show>
+            <div class="tag-list-crumb-trail">
+              <For each={history()}>
+                {(t, i) => (
+                  <>
+                    <button class="tag-list-crumb" onClick={() => jumpTo(i())}>#{t}</button>
+                    <span class="tag-list-crumb-sep">›</span>
+                  </>
+                )}
+              </For>
+              <span class="tag-list-crumb-current">#{selectedTag()}</span>
+            </div>
           </div>
 
           <Show when={relatedTags().length > 0}>
@@ -98,7 +102,7 @@ export default function TagList(props: Props) {
               <div class="tag-list-related">
                 <For each={relatedTags()}>
                   {tag => (
-                    <button class="tag-chip" onClick={() => openTag(tag.name)}>
+                    <button class="tag-chip" onClick={() => openTag(tag.name, selectedTag())}>
                       #{tag.name}<span class="tag-chip-count">{tag.count}</span>
                     </button>
                   )}
@@ -106,6 +110,25 @@ export default function TagList(props: Props) {
               </div>
             </div>
           </Show>
+
+          <div class="tag-list-section">
+            <div class="tag-list-section-label">notes</div>
+            <div class="tag-list-notes">
+              <For each={notes()}>
+                {(note, i) => (
+                  <button
+                    class={`tag-list-note${i() % 2 === 0 ? " tag-list-note-stripe" : ""}`}
+                    onClick={() => props.onOpenNote(note)}
+                  >
+                    {note.title}
+                  </button>
+                )}
+              </For>
+              <Show when={notes().length === 0}>
+                <div class="tag-list-empty">no notes</div>
+              </Show>
+            </div>
+          </div>
         </div>
       </Show>
     </div>

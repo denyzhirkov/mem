@@ -59,6 +59,18 @@
   opacity: 1;
 }
 
+.topbar-btn-delete {
+  opacity: 0;
+  color: var(--text-dim);
+  transition: opacity 200ms var(--ease), color 150ms var(--ease);
+}
+.topbar-right:hover .topbar-btn-delete {
+  opacity: 1;
+}
+.topbar-btn-delete:hover {
+  color: var(--danger) !important;
+}
+
 .topbar-btn kbd {
   font-size: 10px;
   padding: 1px 5px;

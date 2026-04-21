@@ -32,16 +32,8 @@ export default function TopBar(props: Props) {
         <button class="topbar-btn theme-toggle" onClick={props.onToggleTheme} title="Toggle theme">
           {props.theme() === "light" ? "\u263E" : "\u2600"}
         </button>
-        <Show when={props.hasNote()}>
-          <button
-            class="topbar-btn topbar-btn-dim"
-            onClick={props.onDelete}
-            style={{
-              color: "var(--danger)",
-              ...(props.showGraph() ? { visibility: "hidden", "pointer-events": "none" } : {}),
-            }}
-            title="Delete note"
-          >
+        <Show when={props.hasNote() && !props.showGraph()}>
+          <button class="topbar-btn topbar-btn-delete" onClick={props.onDelete} title="Delete note">
             {"\u2715"}
           </button>
         </Show>

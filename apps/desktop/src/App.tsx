@@ -199,7 +199,7 @@ function App() {
       const content = await invoke<string>("get_note", { id: note.id });
       if (editor) {
         editor.commands.setContent(content);
-        editor.commands.focus("end");
+        editor.commands.focus("start");
       }
     } catch (e) {
       console.error("openNote:", e);
