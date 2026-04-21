@@ -1,5 +1,8 @@
+import { Show } from "solid-js";
+
 type Props = {
   hasNote: () => boolean;
+  updateAvailable: () => string | null;
 };
 
 export default function StatusBar(props: Props) {
@@ -13,7 +16,18 @@ export default function StatusBar(props: Props) {
         <span>&gt; quote</span>
         <span>#tag</span>
       </div>
-      <span>{props.hasNote() ? "Saved" : "New note"}</span>
+      <Show when={props.updateAvailable()} fallback={
+        <span>{props.hasNote() ? "Saved" : "New note"}</span>
+      }>
+        <a
+          class="statusbar-update"
+          href={`https://github.com/denyzhirkov/mem/releases/tag/v${props.updateAvailable()}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          ↑ v{props.updateAvailable()} available
+        </a>
+      </Show>
     </div>
   );
 }

@@ -18,6 +18,16 @@ import TagGraph from "./components/TagGraph";
 import TagList from "./components/TagList";
 import "./App.css";
 
+function isNewer(latest: string, current: string): boolean {
+  const a = latest.split(".").map(Number);
+  const b = current.split(".").map(Number);
+  for (let i = 0; i < 3; i++) {
+    if ((a[i] ?? 0) > (b[i] ?? 0)) return true;
+    if ((a[i] ?? 0) < (b[i] ?? 0)) return false;
+  }
+  return false;
+}
+
 function App() {
   const [currentNote, setCurrentNote] = createSignal<NoteInfo | null>(null);
   const [noteTitle, setNoteTitle] = createSignal("");
@@ -33,6 +43,7 @@ function App() {
   const [showGraph, setShowGraph] = createSignal(false);
   const [graphVersion, setGraphVersion] = createSignal(0);
   const [graphMode, setGraphMode] = createSignal<"dots" | "list">("dots");
+  const [updateAvailable, setUpdateAvailable] = createSignal<string | null>(null);
   const [theme, setTheme] = createSignal<"light" | "dark">(
     window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
   );
@@ -338,12 +349,39 @@ function App() {
       }
     }).then(fn => { unlistenVaultChanged = fn; });
 
+    const CHECK_KEY = "mem_update_last_check";
+    const CACHE_KEY = "mem_update_latest";
+    const DAY_MS = 86_400_000;
+
+    async function checkUpdate() {
+      try {
+        const data = await fetch("https://api.github.com/repos/denyzhirkov/mem/releases/latest").then(r => r.json());
+        const latest = (data.tag_name as string | undefined)?.replace(/^v/, "");
+        if (latest) {
+          localStorage.setItem(CHECK_KEY, String(Date.now()));
+          localStorage.setItem(CACHE_KEY, latest);
+          if (isNewer(latest, __APP_VERSION__)) setUpdateAvailable(latest);
+        }
+      } catch {}
+    }
+
+    // show cached result immediately if still newer
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached && isNewer(cached, __APP_VERSION__)) setUpdateAvailable(cached);
+
+    // fetch if never checked or last check > 24h ago
+    const lastCheck = Number(localStorage.getItem(CHECK_KEY) ?? 0);
+    if (Date.now() - lastCheck > DAY_MS) checkUpdate();
+
+    const updateTimer = setInterval(checkUpdate, DAY_MS);
+
     onCleanup(() => {
       window.removeEventListener("keydown", handleKeyDown);
       clearTimeout(idleTimer);
       clearTimeout(maxTimer);
       editor?.destroy();
       unlistenVaultChanged?.();
+      clearInterval(updateTimer);
     });
   });
 
@@ -430,7 +468,7 @@ function App() {
         />
       </Show>
 
-      <StatusBar hasNote={() => !!currentNote()} />
+      <StatusBar hasNote={() => !!currentNote()} updateAvailable={updateAvailable} />
 
       <Show when={showDeleteConfirm()}>
         <DeleteConfirm

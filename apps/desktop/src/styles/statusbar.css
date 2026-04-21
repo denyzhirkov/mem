@@ -18,3 +18,13 @@
 .statusbar-hints span {
   opacity: 0.7;
 }
+
+.statusbar-update {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.statusbar-update:hover {
+  text-decoration: underline;
+}
