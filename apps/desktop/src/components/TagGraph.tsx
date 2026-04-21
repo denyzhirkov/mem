@@ -28,32 +28,31 @@ export default function TagGraph(props: Props) {
   let nodes: SimNode[] = [];
   let edges: SimEdge[] = [];
   let dragging: SimNode | null = null;
+  let didDrag = false;
   let offsetX = 0;
   let offsetY = 0;
   let hoveredNode: SimNode | null = null;
+  let dpr = 1;
+  let lw = 0;
+  let lh = 0;
 
   async function loadData() {
     try {
       const data = await invoke<TagGraphData>("tag_graph");
       const nameToIdx = new Map<string, number>();
-      const w = canvas!.width;
-      const h = canvas!.height;
-
       nodes = data.nodes.map((n, i) => {
         nameToIdx.set(n.name, i);
-        // Spread nodes in a circle initially
         const angle = (i / data.nodes.length) * Math.PI * 2;
-        const r = Math.min(w, h) * 0.3;
+        const r = Math.min(lw, lh) * 0.3;
         return {
           name: n.name,
           count: n.count,
-          x: w / 2 + Math.cos(angle) * r + (Math.random() - 0.5) * 40,
-          y: h / 2 + Math.sin(angle) * r + (Math.random() - 0.5) * 40,
+          x: lw / 2 + Math.cos(angle) * r + (Math.random() - 0.5) * 40,
+          y: lh / 2 + Math.sin(angle) * r + (Math.random() - 0.5) * 40,
           vx: 0,
           vy: 0,
         };
       });
-
       edges = data.edges
         .map(e => ({
           source: nameToIdx.get(e.source) ?? -1,
@@ -66,18 +65,17 @@ export default function TagGraph(props: Props) {
     }
   }
 
-  function simulate() {
-    const center_x = canvas!.width / 2;
-    const center_y = canvas!.height / 2;
+  function isSettled(): boolean {
+    return nodes.every(n => Math.abs(n.vx) < 0.05 && Math.abs(n.vy) < 0.05);
+  }
 
+  function simulate() {
+    const cx = lw / 2;
+    const cy = lh / 2;
     for (const node of nodes) {
       if (node === dragging) continue;
-
-      // Gravity toward center
-      node.vx += (center_x - node.x) * 0.001;
-      node.vy += (center_y - node.y) * 0.001;
-
-      // Repulsion between nodes
+      node.vx += (cx - node.x) * 0.001;
+      node.vy += (cy - node.y) * 0.001;
       for (const other of nodes) {
         if (node === other) continue;
         const dx = node.x - other.x;
@@ -88,8 +86,6 @@ export default function TagGraph(props: Props) {
         node.vy += (dy / dist) * force;
       }
     }
-
-    // Attraction along edges
     for (const edge of edges) {
       const a = nodes[edge.source];
       const b = nodes[edge.target];
@@ -100,8 +96,6 @@ export default function TagGraph(props: Props) {
       if (a !== dragging) { a.vx += (dx / dist) * force; a.vy += (dy / dist) * force; }
       if (b !== dragging) { b.vx -= (dx / dist) * force; b.vy -= (dy / dist) * force; }
     }
-
-    // Apply velocity with damping
     for (const node of nodes) {
       if (node === dragging) continue;
       node.vx *= 0.85;
@@ -117,9 +111,8 @@ export default function TagGraph(props: Props) {
 
   function draw() {
     const ctx = canvas!.getContext("2d")!;
-    const w = canvas!.width;
-    const h = canvas!.height;
-    ctx.clearRect(0, 0, w, h);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, lw, lh);
 
     const style = getComputedStyle(document.documentElement);
     const accent = style.getPropertyValue("--accent").trim();
@@ -128,7 +121,6 @@ export default function TagGraph(props: Props) {
     const tagBg = style.getPropertyValue("--bg-tag").trim();
     const tagColor = style.getPropertyValue("--text-tag").trim();
 
-    // Edges
     ctx.lineWidth = 1;
     for (const edge of edges) {
       const a = nodes[edge.source];
@@ -142,24 +134,17 @@ export default function TagGraph(props: Props) {
     }
     ctx.globalAlpha = 1;
 
-    // Nodes
     for (const node of nodes) {
       const r = nodeRadius(node.count);
       const isHovered = node === hoveredNode;
-
-      // Circle
       ctx.beginPath();
       ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
       ctx.fillStyle = isHovered ? accent : tagBg;
       ctx.fill();
-
-      // Label
       ctx.font = `${isHovered ? "600" : "500"} ${isHovered ? 13 : 11}px Inter, system-ui, sans-serif`;
       ctx.fillStyle = isHovered ? textColor : tagColor;
       ctx.textAlign = "center";
       ctx.fillText(`#${node.name}`, node.x, node.y + r + 14);
-
-      // Count badge
       if (node.count > 1) {
         ctx.font = "600 9px Inter, system-ui, sans-serif";
         ctx.fillStyle = isHovered ? textColor : tagColor;
@@ -171,6 +156,15 @@ export default function TagGraph(props: Props) {
   function loop() {
     simulate();
     draw();
+    if (isSettled() && !dragging) {
+      animId = 0;
+      return;
+    }
+    animId = requestAnimationFrame(loop);
+  }
+
+  function startLoop() {
+    cancelAnimationFrame(animId);
     animId = requestAnimationFrame(loop);
   }
 
@@ -191,8 +185,10 @@ export default function TagGraph(props: Props) {
     const node = findNode(x, y);
     if (node) {
       dragging = node;
+      didDrag = false;
       offsetX = x - node.x;
       offsetY = y - node.y;
+      startLoop();
     }
   }
 
@@ -205,9 +201,12 @@ export default function TagGraph(props: Props) {
       dragging.y = y - offsetY;
       dragging.vx = 0;
       dragging.vy = 0;
+      didDrag = true;
     }
+    const prev = hoveredNode;
     hoveredNode = findNode(x, y);
     canvas!.style.cursor = hoveredNode ? "pointer" : "default";
+    if (prev !== hoveredNode && !animId) draw();
   }
 
   function handleMouseUp() {
@@ -215,29 +214,36 @@ export default function TagGraph(props: Props) {
   }
 
   function handleClick(e: MouseEvent) {
+    if (didDrag) { didDrag = false; return; }
     const rect = canvas!.getBoundingClientRect();
     const node = findNode(e.clientX - rect.left, e.clientY - rect.top);
-    if (node && !dragging) {
-      props.onTagClick(node.name);
-    }
+    if (node) props.onTagClick(node.name);
   }
 
   function resize() {
     if (!canvas) return;
-    canvas.width = canvas.parentElement!.clientWidth;
-    canvas.height = canvas.parentElement!.clientHeight;
+    dpr = window.devicePixelRatio || 1;
+    lw = canvas.parentElement!.clientWidth;
+    lh = canvas.parentElement!.clientHeight;
+    canvas.width = lw * dpr;
+    canvas.height = lh * dpr;
+    canvas.style.width = `${lw}px`;
+    canvas.style.height = `${lh}px`;
   }
 
   createEffect(async () => {
     const v = props.version();
-    if (v > 0) await loadData();
+    if (v > 0) {
+      await loadData();
+      startLoop();
+    }
   });
 
   onMount(async () => {
     resize();
     window.addEventListener("resize", resize);
     await loadData();
-    loop();
+    startLoop();
   });
 
   onCleanup(() => {

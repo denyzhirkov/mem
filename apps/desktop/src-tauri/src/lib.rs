@@ -194,6 +194,38 @@ fn search_notes(
     db.search(&query).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn list_notes_by_tag(tag: String, state: tauri::State<'_, AppState>) -> Result<Vec<NoteWithTags>, String> {
+    let refs = note::list(
+        &state.vault_path,
+        ListParams { tag: Some(tag), ..Default::default() },
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(refs.into_iter().map(Into::into).collect())
+}
+
+#[tauri::command]
+fn related_tags(tag: String, state: tauri::State<'_, AppState>) -> Result<Vec<(String, i64)>, String> {
+    let db = state.db.lock().map_err(|e| e.to_string())?;
+    let mut stmt = db
+        .conn()
+        .prepare(
+            "SELECT b.tag_name, COUNT(*) as weight
+             FROM note_tags a
+             JOIN note_tags b ON a.note_id = b.note_id AND a.tag_name != b.tag_name
+             WHERE a.tag_name = ?1
+             GROUP BY b.tag_name
+             ORDER BY weight DESC, b.tag_name ASC",
+        )
+        .map_err(|e| e.to_string())?;
+    let rows: Vec<(String, i64)> = stmt
+        .query_map([tag], |row| Ok((row.get(0)?, row.get(1)?)))
+        .map_err(|e| e.to_string())?
+        .filter_map(|r| r.ok())
+        .collect();
+    Ok(rows)
+}
+
 fn load_tags_for_note(db: &IndexDb, note_id: &str) -> Vec<String> {
     let mut stmt = db
         .conn()
@@ -273,7 +305,9 @@ pub fn run() {
             update_note,
             remove_note,
             search_notes,
-            tag_graph
+            tag_graph,
+            list_notes_by_tag,
+            related_tags
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

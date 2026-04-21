@@ -15,6 +15,7 @@ import StatusBar from "./components/StatusBar";
 import DeleteConfirm from "./components/DeleteConfirm";
 import Palette from "./components/Palette";
 import TagGraph from "./components/TagGraph";
+import TagList from "./components/TagList";
 import "./App.css";
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
   const [showDeleteConfirm, setShowDeleteConfirm] = createSignal(false);
   const [showGraph, setShowGraph] = createSignal(false);
   const [graphVersion, setGraphVersion] = createSignal(0);
+  const [graphMode, setGraphMode] = createSignal<"dots" | "list">("dots");
   const [theme, setTheme] = createSignal<"light" | "dark">(
     window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
   );
@@ -378,7 +380,24 @@ function App() {
       />
 
       <Show when={showGraph()}>
-        <TagGraph onTagClick={handleTagClick} version={graphVersion} />
+        <div class="graph-view">
+          <div class="graph-toolbar">
+            <button
+              class={`graph-mode-btn${graphMode() === "dots" ? " active" : ""}`}
+              onClick={() => setGraphMode("dots")}
+            >dots</button>
+            <button
+              class={`graph-mode-btn${graphMode() === "list" ? " active" : ""}`}
+              onClick={() => setGraphMode("list")}
+            >list</button>
+          </div>
+          <Show when={graphMode() === "dots"}>
+            <TagGraph onTagClick={handleTagClick} version={graphVersion} />
+          </Show>
+          <Show when={graphMode() === "list"}>
+            <TagList onOpenNote={openNote} />
+          </Show>
+        </div>
       </Show>
 
       <div class="canvas" style={{ display: showGraph() ? "none" : undefined }}>
